@@ -37,7 +37,7 @@ impl std::fmt::Debug for DebugState {
                 f_struct.field("_main_value_", &self.main_value);
             }
             for (key, value) in self.other_values.iter() {
-                f_struct.field(&key, &value);
+                f_struct.field(key, &value);
             }
             if !self.children.is_empty() {
                 f_struct.field("children", &self.children);
