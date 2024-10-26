@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A widget that can switch between one of many views, hiding the inactive ones.
 
@@ -22,6 +11,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use tracing::{instrument, trace};
 
+use crate::commands::SCROLL_TO_VIEW;
 use crate::kurbo::{Circle, Line};
 use crate::widget::prelude::*;
 use crate::widget::{Axis, Flex, Label, LabelText, LensScopeTransfer, Painter, Scope, ScopePolicy};
@@ -413,7 +403,7 @@ impl<TP: TabsPolicy> Widget<TabsState<TP>> for TabBar<TP> {
         let mut minor: f64 = 0.;
         for (_, tab) in self.tabs.iter_mut() {
             let size = tab.layout(ctx, bc, data, env);
-            tab.set_origin(ctx, data, env, self.axis.pack(major, 0.).into());
+            tab.set_origin(ctx, self.axis.pack(major, 0.).into());
             major += self.axis.major(size);
             minor = minor.max(self.axis.minor(size));
         }
@@ -508,7 +498,7 @@ impl TabsTransitionState {
     }
 }
 
-fn ensure_for_tabs<Content, TP: TabsPolicy + ?Sized>(
+fn ensure_for_tabs<Content, TP: TabsPolicy>(
     contents: &mut Vec<(TP::Key, Content)>,
     policy: &TP,
     data: &TP::Input,
@@ -565,7 +555,7 @@ impl<TP: TabsPolicy> TabsBody<TP> {
 
     // Doesn't take self to allow separate borrowing
     fn child(
-        children: &mut Vec<(TP::Key, TabBodyPod<TP>)>,
+        children: &mut [(TP::Key, TabBodyPod<TP>)],
         idx: usize,
     ) -> Option<&mut TabBodyPod<TP>> {
         children.get_mut(idx).map(|x| &mut x.1)
@@ -579,7 +569,14 @@ impl<TP: TabsPolicy> TabsBody<TP> {
 impl<TP: TabsPolicy> Widget<TabsState<TP>> for TabsBody<TP> {
     #[instrument(name = "TabsBody", level = "trace", skip(self, ctx, event, data, env))]
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut TabsState<TP>, env: &Env) {
-        if event.should_propagate_to_hidden() {
+        if let Event::Notification(notification) = event {
+            if notification.is(SCROLL_TO_VIEW)
+                && Some(notification.route()) != self.active_child(data).map(|w| w.id())
+            {
+                // Ignore SCROLL_TO_VIEW requests from every widget except the active.
+                ctx.set_handled();
+            }
+        } else if event.should_propagate_to_hidden() {
             for child in self.child_pods() {
                 child.event(ctx, event, &mut data.inner, env);
             }
@@ -684,7 +681,7 @@ impl<TP: TabsPolicy> Widget<TabsState<TP>> for TabsBody<TP> {
         // Laying out all children so events can be delivered to them.
         for child in self.child_pods() {
             child.layout(ctx, bc, inner, env);
-            child.set_origin(ctx, inner, env, Point::ORIGIN);
+            child.set_origin(ctx, Point::ORIGIN);
         }
 
         bc.max()
@@ -746,7 +743,7 @@ impl<TP: TabsPolicy> ScopePolicy for TabsScopePolicy<TP> {
 }
 
 /// Determines whether the tabs will have a transition animation when a new tab is selected.
-#[derive(Data, Copy, Clone, Debug, PartialOrd, PartialEq)]
+#[derive(Data, Copy, Clone, Debug, PartialOrd, PartialEq, Eq)]
 pub enum TabsTransition {
     /// Change tabs instantly with no animation
     Instant,
@@ -770,7 +767,7 @@ impl TabsTransition {
 }
 
 /// Determines where the tab bar should be placed relative to the cross axis
-#[derive(Debug, Copy, Clone, PartialEq, Data)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Data)]
 pub enum TabsEdge {
     /// For horizontal tabs, top. For vertical tabs, left.
     Leading,
@@ -798,6 +795,7 @@ impl<T: Data> InitialTab<T> {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum TabsContent<TP: TabsPolicy> {
     Building {
         tabs: TP::Build,
@@ -1050,7 +1048,7 @@ impl<TP: TabsPolicy> Widget<TP::Input> for Tabs<TP> {
     ) -> Size {
         if let TabsContent::Running { scope } = &mut self.content {
             let size = scope.layout(ctx, bc, data, env);
-            scope.set_origin(ctx, data, env, Point::ORIGIN);
+            scope.set_origin(ctx, Point::ORIGIN);
             size
         } else {
             bc.min()

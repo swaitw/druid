@@ -1,19 +1,8 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
-//! This is an example of how you would implement the game of life with druid.
-//! This example doesnt showcase anything specific in druid.
+//! This is an example of how you would implement the game of life with Druid.
+//! This example doesn't showcase anything specific in Druid.
 
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
@@ -34,7 +23,7 @@ const POOL_SIZE: usize = GRID_SIZE * GRID_SIZE;
 const BACKGROUND: Color = Color::grey8(23);
 static COLOURS: ColorScheme = &[
     Color::rgb8(0xEB, 0xF1, 0xF7), //Color::rgb(235, 241, 247)
-    Color::rgb8(0xA3, 0xFC, 0xF7), //Color::rgb(162,252,247)
+    Color::rgb8(0xA2, 0xFC, 0xF7), //Color::rgb(162,252,247)
     Color::rgb8(0xA2, 0xE3, 0xD8), //Color::rgb(162,227,216)
     Color::rgb8(0xF2, 0xE6, 0xF1), //Color::rgb(242,230,241)
     Color::rgb8(0xE0, 0xAF, 0xAF), //Color::rgb(224,175,175)
@@ -313,7 +302,7 @@ impl Widget<AppData> for GameOfLifeWidget {
                     };
                     let rect = Rect::from_origin_size(point, cell_size);
 
-                    // We devide by 2 so that the colour changes every 2 positions instead of every 1
+                    // We divide by 2 so that the colour changes every 2 positions instead of every 1
                     ctx.fill(
                         rect,
                         &COLOURS[((pos.row * GRID_SIZE + pos.col) / 2) % COLOURS.len()],

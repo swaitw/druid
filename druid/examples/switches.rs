@@ -1,22 +1,15 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//! Example of switches
 
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
 
+#[allow(deprecated)]
+use druid::widget::Parse;
 use druid::widget::{
-    Checkbox, Flex, Label, LensWrap, MainAxisAlignment, Padding, Parse, Stepper, Switch, TextBox,
+    Checkbox, Flex, Label, LensWrap, MainAxisAlignment, Padding, Stepper, Switch, TextBox,
     WidgetExt,
 };
 use druid::{AppLauncher, Data, Lens, LensExt, LocalizedString, Widget, WindowDesc};
@@ -47,6 +40,8 @@ fn build_widget() -> impl Widget<DemoState> {
     );
 
     let mut textbox_row = Flex::row();
+    // TODO: Replace Parse usage with TextBox::with_formatter
+    #[allow(deprecated)]
     let textbox = LensWrap::new(
         Parse::new(TextBox::new()),
         DemoState::stepper_value.map(|x| Some(*x), |x, y| *x = y.unwrap_or(0.0)),

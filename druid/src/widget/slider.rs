@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A slider widget.
 
@@ -143,7 +132,7 @@ impl Slider {
         self
     }
 
-    /// Builder-style method to the the axis on which the slider moves.
+    /// Builder-style method to the axis on which the slider moves.
     ///
     /// The default is `Horizontal`.
     pub fn axis(mut self, axis: Axis) -> Self {
@@ -278,7 +267,7 @@ impl RangeSlider {
         self
     }
 
-    /// Builder-style method to the the axis on which the slider moves.
+    /// Builder-style method to set the axis on which the slider moves.
     ///
     /// The default is `Horizontal`.
     pub fn axis(mut self, axis: Axis) -> Self {
@@ -424,7 +413,7 @@ impl Widget<(f64, f64)> for RangeSlider {
     fn debug_state(&self, data: &(f64, f64)) -> DebugState {
         DebugState {
             display_name: self.short_type_name().to_string(),
-            main_value: format!("{:?}", data),
+            main_value: format!("{data:?}"),
             ..Default::default()
         }
     }
@@ -468,8 +457,8 @@ impl<T, W: Widget<T>> Annotated<T, W> {
         let mut walk = self.mapping.min;
         while walk < self.mapping.max + f64::EPSILON * 10.0 {
             let layout = text
-                .new_text_layout(format!("{}", walk))
-                .text_color(text_color.clone())
+                .new_text_layout(format!("{walk}"))
+                .text_color(text_color)
                 .build()
                 .unwrap();
 
@@ -524,14 +513,14 @@ impl<T: Data, W: Widget<T>> Widget<T> for Annotated<T, W> {
                 let child_bc = bc.shrink((label_size.width, 0.0));
                 let child_size = self.inner.layout(ctx, &child_bc, data, env);
                 self.inner
-                    .set_origin(ctx, data, env, Point::new(label_size.width, 0.0));
+                    .set_origin(ctx, Point::new(label_size.width, 0.0));
 
                 Size::new(child_size.width + label_size.width, child_size.height)
             }
             Axis::Horizontal => {
                 let child_bc = bc.shrink((0.0, label_size.height));
                 let child_size = self.inner.layout(ctx, &child_bc, data, env);
-                self.inner.set_origin(ctx, data, env, Point::ZERO);
+                self.inner.set_origin(ctx, Point::ZERO);
 
                 ctx.set_baseline_offset(self.inner.baseline_offset() + label_size.height);
                 Size::new(child_size.width, child_size.height + label_size.height)
@@ -634,9 +623,8 @@ impl SliderValueMapping {
         let scalar = (self.axis.major_pos(mouse_pos) - knob_size / 2.)
             / (self.axis.major(slider_size) - knob_size);
 
-        let mut value = (self.min + scalar * (self.max - self.min) + offset)
-            .min(self.max)
-            .max(self.min);
+        let mut value =
+            (self.min + scalar * (self.max - self.min) + offset).clamp(self.min, self.max);
 
         if let Some(step) = self.step {
             let max_step_value = ((self.max - self.min) / step).floor() * step + self.min;
@@ -665,14 +653,14 @@ impl SliderValueMapping {
     }
 
     fn normalize(&self, data: f64) -> f64 {
-        (data.max(self.min).min(self.max) - self.min) / (self.max - self.min)
+        (data.clamp(self.min, self.max) - self.min) / (self.max - self.min)
     }
 
     /// check self.min <= self.max, if not swaps the values.
     fn check_range(&mut self) {
         if self.max < self.min {
             warn!(
-                "min({}) should be less than max({}), swaping the values",
+                "min({}) should be less than max({}), swapping the values",
                 self.min, self.max
             );
             std::mem::swap(&mut self.max, &mut self.min);

@@ -1,16 +1,9 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// This whole widget was deprecated in Druid 0.7
+// https://github.com/linebender/druid/pull/1377
+#![allow(deprecated)]
 
 use std::fmt::Display;
 use std::mem;
@@ -22,6 +15,8 @@ use crate::widget::prelude::*;
 use crate::Data;
 
 /// Converts a `Widget<String>` to a `Widget<Option<T>>`, mapping parse errors to None
+#[doc(hidden)]
+#[deprecated(since = "0.7.0", note = "Use the Formatter trait instead")]
 pub struct Parse<T> {
     widget: T,
     state: String,
@@ -64,9 +59,27 @@ impl<T: FromStr + Display + Data, W: Widget<String>> Widget<Option<T>> for Parse
     fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &Option<T>, data: &Option<T>, env: &Env) {
         let old = match *data {
             None => return, // Don't clobber the input
-            Some(ref x) => mem::replace(&mut self.state, x.to_string()),
+            Some(ref x) => {
+                // Its possible that the current self.state already represents the data value
+                // in that case we shouldn't clobber the self.state. This helps deal
+                // with types where parse()/to_string() round trips can lose information
+                // e.g. with floating point numbers, text of "1.0" becomes "1" in the
+                // round trip, and this makes it impossible to type in the . otherwise
+                match self.state.parse() {
+                    Err(_) => Some(mem::replace(&mut self.state, x.to_string())),
+                    Ok(v) => {
+                        if !Data::same(&v, x) {
+                            Some(mem::replace(&mut self.state, x.to_string()))
+                        } else {
+                            None
+                        }
+                    }
+                }
+            }
         };
-        self.widget.update(ctx, &old, &self.state, env)
+        // if old is None here, that means that self.state hasn't changed
+        let old_data = old.as_ref().unwrap_or(&self.state);
+        self.widget.update(ctx, old_data, &self.state, env)
     }
 
     #[instrument(name = "Parse", level = "trace", skip(self, ctx, bc, _data, env))]

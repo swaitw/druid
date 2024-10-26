@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 use std::marker::PhantomData;
 use std::ops;
@@ -390,9 +379,9 @@ where
     }
 }
 
-/// `Lens` for invoking `Deref` and `DerefMut` on a type
+/// `Lens` for invoking `Deref` and `DerefMut` on a type.
 ///
-/// See also `LensExt::deref`.
+/// See also [`LensExt::deref`].
 #[derive(Debug, Copy, Clone)]
 pub struct Deref;
 
@@ -410,11 +399,8 @@ where
 
 /// [`Lens`] for invoking `AsRef` and `AsMut` on a type.
 ///
-/// [`LensExt::ref`] offers an easy way to apply this,
+/// [`LensExt::as_ref`] offers an easy way to apply this,
 /// as well as more information and examples.
-///
-/// [`Lens`]: ../trait.Lens.html
-/// [`LensExt::ref`]: ../trait.LensExt.html#method.as_ref
 #[derive(Debug, Copy, Clone)]
 pub struct Ref;
 

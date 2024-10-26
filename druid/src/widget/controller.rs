@@ -1,22 +1,11 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A widget-controlling widget.
 
 use crate::debug_state::DebugState;
 use crate::widget::prelude::*;
-use crate::widget::WidgetWrapper;
+use crate::widget::{Axis, WidgetWrapper};
 
 /// A trait for types that modify behaviour of a child widget.
 ///
@@ -40,7 +29,7 @@ use crate::widget::WidgetWrapper;
 ///
 /// # Examples
 ///
-/// ## A [`TextBox`] that takes focus on launch:
+/// A [`TextBox`] that takes focus on launch:
 ///
 /// ```
 /// # use druid::widget::{Controller, TextBox};
@@ -57,21 +46,15 @@ use crate::widget::WidgetWrapper;
 /// }
 /// ```
 ///
-/// [`Widget`]: ../trait.Widget.html
-/// [`TextBox`]: struct.TextBox.html
-/// [`ControllerHost`]: struct.ControllerHost.html
-/// [`WidgetExt::controller`]: ../trait.WidgetExt.html#tymethod.controller
+/// [`TextBox`]: super::TextBox
+/// [`WidgetExt::controller`]: super::WidgetExt::controller
 pub trait Controller<T, W: Widget<T>> {
     /// Analogous to [`Widget::event`].
-    ///
-    /// [`Widget::event`]: ../trait.Widget.html#tymethod.event
     fn event(&mut self, child: &mut W, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
         child.event(ctx, event, data, env)
     }
 
     /// Analogous to [`Widget::lifecycle`].
-    ///
-    /// [`Widget::lifecycle`]: ../trait.Widget.html#tymethod.lifecycle
     fn lifecycle(
         &mut self,
         child: &mut W,
@@ -84,17 +67,12 @@ pub trait Controller<T, W: Widget<T>> {
     }
 
     /// Analogous to [`Widget::update`].
-    ///
-    /// [`Widget::update`]: ../trait.Widget.html#tymethod.update
     fn update(&mut self, child: &mut W, ctx: &mut UpdateCtx, old_data: &T, data: &T, env: &Env) {
         child.update(ctx, old_data, data, env)
     }
 }
 
 /// A [`Widget`] that manages a child and a [`Controller`].
-///
-/// [`Widget`]: ../trait.Widget.html
-/// [`Controller`]: trait.Controller.html
 pub struct ControllerHost<W, C> {
     widget: W,
     controller: C,
@@ -141,6 +119,17 @@ impl<T, W: Widget<T>, C: Controller<T, W>> Widget<T> for ControllerHost<W, C> {
             children: vec![self.widget.debug_state(data)],
             ..Default::default()
         }
+    }
+
+    fn compute_max_intrinsic(
+        &mut self,
+        axis: Axis,
+        ctx: &mut LayoutCtx,
+        bc: &BoxConstraints,
+        data: &T,
+        env: &Env,
+    ) -> f64 {
+        self.widget.compute_max_intrinsic(axis, ctx, bc, data, env)
     }
 }
 

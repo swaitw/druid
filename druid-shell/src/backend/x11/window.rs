@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! X11 window creation and window management.
 
@@ -42,8 +31,9 @@ use x11rb::wrapper::ConnectionExt as _;
 use x11rb::xcb_ffi::XCBConnection;
 
 #[cfg(feature = "raw-win-handle")]
-use raw_window_handle::{unix::XcbHandle, HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle, XcbWindowHandle};
 
+use crate::backend::shared::Timer;
 use crate::common_util::IdleCallback;
 use crate::dialog::FileDialogOptions;
 use crate::error::Error as ShellError;
@@ -60,8 +50,8 @@ use crate::window::{
 use crate::{window, KeyEvent, ScaledArea};
 
 use super::application::Application;
+use super::dialog;
 use super::menu::Menu;
-use super::util::Timer;
 
 /// A version of XCB's `xcb_visualtype_t` struct. This was copied from the [example] in x11rb; it
 /// is used to interoperate with cairo.
@@ -119,6 +109,7 @@ pub(crate) struct WindowBuilder {
     min_size: Size,
     resizable: bool,
     level: WindowLevel,
+    always_on_top: bool,
     state: Option<window::WindowState>,
 }
 
@@ -134,6 +125,7 @@ impl WindowBuilder {
             min_size: Size::new(0.0, 0.0),
             resizable: true,
             level: WindowLevel::AppWindow,
+            always_on_top: false,
             state: None,
         }
     }
@@ -170,6 +162,10 @@ impl WindowBuilder {
 
     pub fn set_position(&mut self, position: Point) {
         self.position = Some(position);
+    }
+
+    pub fn set_always_on_top(&mut self, always_on_top: bool) {
+        self.always_on_top = always_on_top;
     }
 
     pub fn set_level(&mut self, level: window::WindowLevel) {
@@ -269,7 +265,8 @@ impl WindowBuilder {
                 | EventMask::KEY_RELEASE
                 | EventMask::BUTTON_PRESS
                 | EventMask::BUTTON_RELEASE
-                | EventMask::POINTER_MOTION,
+                | EventMask::POINTER_MOTION
+                | EventMask::FOCUS_CHANGE,
         );
         if transparent {
             let colormap = conn.generate_id()?;
@@ -395,7 +392,7 @@ impl WindowBuilder {
             let mut wm_class = Vec::with_capacity(2 * (name.len() + 1));
             wm_class.extend(name.as_bytes());
             wm_class.push(0);
-            if let Some(&first) = wm_class.get(0) {
+            if let Some(&first) = wm_class.first() {
                 wm_class.push(first.to_ascii_uppercase());
                 wm_class.extend(&name.as_bytes()[1..]);
             }
@@ -492,7 +489,7 @@ impl WindowBuilder {
             window.set_position(pos);
         }
 
-        let handle = WindowHandle::new(id, Rc::downgrade(&window));
+        let handle = WindowHandle::new(id, visual_type.visual_id, Rc::downgrade(&window));
         window.connect(handle.clone())?;
 
         self.app.add_window(id, window)?;
@@ -561,12 +558,12 @@ pub(crate) struct Window {
     scale: Cell<Scale>,
     // min size in px
     min_size: Size,
-    /// We've told X11 to destroy this window, so don't so any more X requests with this window id.
+    /// We've told X11 to destroy this window, so don't do any more X requests with this window id.
     destroyed: Cell<bool>,
     /// The region that was invalidated since the last time we rendered.
     invalid: RefCell<Region>,
     /// Timers, sorted by "earliest deadline first"
-    timer_queue: Mutex<BinaryHeap<Timer>>,
+    timer_queue: Mutex<BinaryHeap<Timer<()>>>,
     idle_queue: Arc<Mutex<Vec<IdleKind>>>,
     // Writing to this wakes up the event loop, so that it can run idle handlers.
     idle_pipe: RawFd,
@@ -660,7 +657,7 @@ struct PresentData {
     last_ust: Option<u64>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CustomCursor(xproto::Cursor);
 
 impl Window {
@@ -781,7 +778,7 @@ impl Window {
         let invalid = std::mem::replace(&mut *borrow_mut!(self.invalid)?, Region::EMPTY);
         {
             let surface = borrow!(self.cairo_surface)?;
-            let cairo_ctx = cairo::Context::new(&surface).unwrap();
+            let cairo_ctx = cairo::Context::new(&*surface).unwrap();
             let scale = self.scale.get();
             for rect in invalid.rects() {
                 let rect = rect.to_px(scale).round();
@@ -851,6 +848,12 @@ impl Window {
         }
     }
 
+    fn hide(&self) {
+        if !self.destroyed() {
+            log_x11!(self.app.connection().unmap_window(self.id));
+        }
+    }
+
     fn close(&self) {
         self.destroy();
     }
@@ -902,6 +905,18 @@ impl Window {
         ));
     }
 
+    fn set_always_on_top(&self, _always_on_top: bool) {
+        // Find the Rust equivilant to "_NET_WM_STATE_ABOVE".
+        // Possibly StackMode::Above.
+        warn!("Window::set_always_on_top is currently unimplemented for X11 backend.");
+    }
+
+    fn set_input_region(&self, _region: Option<Region>) {
+        // Looks like con.shape_mask or conn_shape_rectangles may be the
+        // correct way to implement this.
+        warn!("Window::set_input_region is currently unimplemented for X11 backend.");
+    }
+
     fn set_size(&self, size: Size) {
         let conn = self.app.connection();
         let scale = self.scale.get();
@@ -920,12 +935,17 @@ impl Window {
             return;
         }
 
-        // TODO(x11/misc): Unsure if this does exactly what the doc comment says; need a test case.
         let conn = self.app.connection();
+
+        // This has no effect if we are already "mapped" but it shows the application if it was previously hidden
+        log_x11!(conn.map_window(self.id));
+
+        // Ask nicely to have our window to be at the top of the window stack
         log_x11!(conn.configure_window(
             self.id,
             &xproto::ConfigureWindowAux::new().stack_mode(xproto::StackMode::ABOVE),
         ));
+
         log_x11!(conn.set_input_focus(
             xproto::InputFocus::POINTER_ROOT,
             self.id,
@@ -1165,6 +1185,14 @@ impl Window {
         };
         self.with_handler(|h| h.mouse_move(&mouse_event));
         Ok(())
+    }
+
+    pub fn handle_got_focus(&self) {
+        self.with_handler(|h| h.got_focus());
+    }
+
+    pub fn handle_lost_focus(&self) {
+        self.with_handler(|h| h.lost_focus());
     }
 
     pub fn handle_client_message(&self, client_message: &xproto::ClientMessageEvent) {
@@ -1534,8 +1562,8 @@ impl IdleHandle {
     fn wake(&self) {
         loop {
             match nix::unistd::write(self.pipe, &[0]) {
-                Err(nix::Error::Sys(nix::errno::Errno::EINTR)) => {}
-                Err(nix::Error::Sys(nix::errno::Errno::EAGAIN)) => {}
+                Err(nix::errno::Errno::EINTR) => {}
+                Err(nix::errno::Errno::EAGAIN) => {}
                 Err(e) => {
                     error!("Failed to write to idle pipe: {}", e);
                     break;
@@ -1548,23 +1576,22 @@ impl IdleHandle {
     }
 
     pub(crate) fn schedule_redraw(&self) {
-        self.queue.lock().unwrap().push(IdleKind::Redraw);
-        self.wake();
+        self.add_idle(IdleKind::Redraw);
     }
 
     pub fn add_idle_callback<F>(&self, callback: F)
     where
         F: FnOnce(&mut dyn WinHandler) + Send + 'static,
     {
-        self.queue
-            .lock()
-            .unwrap()
-            .push(IdleKind::Callback(Box::new(callback)));
-        self.wake();
+        self.add_idle(IdleKind::Callback(Box::new(callback)));
     }
 
     pub fn add_idle_token(&self, token: IdleToken) {
-        self.queue.lock().unwrap().push(IdleKind::Token(token));
+        self.add_idle(IdleKind::Token(token));
+    }
+
+    fn add_idle(&self, idle: IdleKind) {
+        self.queue.lock().unwrap().push(idle);
         self.wake();
     }
 }
@@ -1572,6 +1599,8 @@ impl IdleHandle {
 #[derive(Clone, Default)]
 pub(crate) struct WindowHandle {
     id: u32,
+    #[allow(dead_code)] // Only used with the raw-win-handle feature
+    visual_id: u32,
     window: Weak<Window>,
 }
 impl PartialEq for WindowHandle {
@@ -1582,13 +1611,25 @@ impl PartialEq for WindowHandle {
 impl Eq for WindowHandle {}
 
 impl WindowHandle {
-    fn new(id: u32, window: Weak<Window>) -> WindowHandle {
-        WindowHandle { id, window }
+    fn new(id: u32, visual_id: u32, window: Weak<Window>) -> WindowHandle {
+        WindowHandle {
+            id,
+            visual_id,
+            window,
+        }
     }
 
     pub fn show(&self) {
         if let Some(w) = self.window.upgrade() {
             w.show();
+        } else {
+            error!("Window {} has already been dropped", self.id);
+        }
+    }
+
+    pub fn hide(&self) {
+        if let Some(w) = self.window.upgrade() {
+            w.hide();
         } else {
             error!("Window {} has already been dropped", self.id);
         }
@@ -1626,6 +1667,26 @@ impl WindowHandle {
         }
     }
 
+    pub fn set_always_on_top(&self, always_on_top: bool) {
+        if let Some(w) = self.window.upgrade() {
+            w.set_always_on_top(always_on_top);
+        } else {
+            error!("Window {} has already been dropped", self.id);
+        }
+    }
+
+    pub fn set_mouse_pass_through(&self, _mouse_pass_thorugh: bool) {
+        warn!("set_mouse_pass_through unimplemented");
+    }
+
+    pub fn set_input_region(&self, region: Option<Region>) {
+        if let Some(w) = self.window.upgrade() {
+            w.set_input_region(region);
+        } else {
+            error!("Window {} has already been dropped", self.id);
+        }
+    }
+
     pub fn get_position(&self) -> Point {
         if let Some(w) = self.window.upgrade() {
             w.get_position()
@@ -1655,6 +1716,10 @@ impl WindowHandle {
             error!("Window {} has already been dropped", self.id);
             Size::ZERO
         }
+    }
+
+    pub fn is_foreground_window(&self) -> bool {
+        true
     }
 
     pub fn set_window_state(&self, _state: window::WindowState) {
@@ -1746,7 +1811,7 @@ impl WindowHandle {
 
     pub fn request_timer(&self, deadline: Instant) -> TimerToken {
         if let Some(w) = self.window.upgrade() {
-            let timer = Timer::new(deadline);
+            let timer = Timer::new(deadline, ());
             w.timer_queue.lock().unwrap().push(timer);
             timer.token()
         } else {
@@ -1771,7 +1836,7 @@ impl WindowHandle {
                     let conn = w.app.connection();
                     let setup = &conn.setup();
                     let screen = &setup.roots[w.app.screen_num()];
-                    match make_cursor(&**conn, setup.image_byte_order, screen.root, format, desc) {
+                    match make_cursor(conn, setup.image_byte_order, screen.root, format, desc) {
                         // TODO: We 'leak' the cursor - nothing ever calls render_free_cursor
                         Ok(cursor) => Some(cursor),
                         Err(err) => {
@@ -1786,16 +1851,30 @@ impl WindowHandle {
         }
     }
 
-    pub fn open_file(&mut self, _options: FileDialogOptions) -> Option<FileDialogToken> {
-        // TODO(x11/file_dialogs): implement WindowHandle::open_file
-        warn!("WindowHandle::open_file is currently unimplemented for X11 backend.");
-        None
+    pub fn open_file(&mut self, options: FileDialogOptions) -> Option<FileDialogToken> {
+        if let Some(w) = self.window.upgrade() {
+            if let Some(idle) = self.get_idle_handle() {
+                Some(dialog::open_file(w.id, idle, options))
+            } else {
+                warn!("Couldn't open file because no idle handle available");
+                None
+            }
+        } else {
+            None
+        }
     }
 
-    pub fn save_as(&mut self, _options: FileDialogOptions) -> Option<FileDialogToken> {
-        // TODO(x11/file_dialogs): implement WindowHandle::save_as
-        warn!("WindowHandle::save_as is currently unimplemented for X11 backend.");
-        None
+    pub fn save_as(&mut self, options: FileDialogOptions) -> Option<FileDialogToken> {
+        if let Some(w) = self.window.upgrade() {
+            if let Some(idle) = self.get_idle_handle() {
+                Some(dialog::save_file(w.id, idle, options))
+            } else {
+                warn!("Couldn't save file because no idle handle available");
+                None
+            }
+        } else {
+            None
+        }
     }
 
     pub fn show_context_menu(&self, _menu: Menu, _pos: Point) {
@@ -1823,19 +1902,9 @@ impl WindowHandle {
 #[cfg(feature = "raw-win-handle")]
 unsafe impl HasRawWindowHandle for WindowHandle {
     fn raw_window_handle(&self) -> RawWindowHandle {
-        let mut handle = XcbHandle {
-            window: self.id,
-            ..XcbHandle::empty()
-        };
-
-        if let Some(window) = self.window.upgrade() {
-            handle.connection = window.app.connection().get_raw_xcb_connection();
-        } else {
-            // Documentation for HasRawWindowHandle encourages filling in all fields possible,
-            // leaving those empty that cannot be derived.
-            error!("Failed to get XCBConnection, returning incomplete handle");
-        }
-
+        let mut handle = XcbWindowHandle::empty();
+        handle.window = self.id;
+        handle.visual_id = self.visual_id;
         RawWindowHandle::Xcb(handle)
     }
 }

@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! An example of sending commands to specific widgets.
 //!
@@ -63,21 +52,21 @@ fn make_ui() -> impl Widget<OurData> {
     // We can also generate these dynamically whenever we need it.
     let id_two = WidgetId::next();
     // We have a column with 2 labels and 2 buttons.
-    // Each of the 2 labels only have acces to their own counter and are given a `WidgetId`.
-    // Both labels have a controler, this handles commands send to children.
+    // Each of the 2 labels only has access to its own counter and is given a `WidgetId`.
+    // Both labels have a controller, this handles commands send to children.
     // The 2 buttons send a command when clicked. Both send the exact same command.
-    // The key diference is that they both give a diferent `WidgetId` as target.
-    // This means that only the corresponding controler gets the command, and increments their counter.
+    // The key diference is that they both give a different `WidgetId` as target.
+    // This means that only the corresponding controller gets the command, and increments their counter.
     Flex::column()
         .with_child(
-            Label::dynamic(|data, _| format!("One: {}", data))
+            Label::dynamic(|data, _| format!("One: {data}"))
                 .controller(LabelControler)
                 .with_id(ID_ONE)
                 .lens(OurData::counter_one)
                 .padding(2.0),
         )
         .with_child(
-            Label::dynamic(|data, _| format!("Two: {}", data))
+            Label::dynamic(|data, _| format!("Two: {data}"))
                 .controller(LabelControler)
                 .with_id(id_two)
                 .lens(OurData::counter_two)

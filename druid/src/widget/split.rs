@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A widget which splits an area in two, with a settable ratio, and optional draggable resizing.
 
@@ -41,7 +30,9 @@ pub struct Split<T> {
     /// instead of re-centering the bar on the mouse.
     click_offset: f64,
     child1: WidgetPod<T, Box<dyn Widget<T>>>,
+    old_bc_1: BoxConstraints,
     child2: WidgetPod<T, Box<dyn Widget<T>>>,
+    old_bc_2: BoxConstraints,
 }
 
 impl<T> Split<T> {
@@ -66,20 +57,26 @@ impl<T> Split<T> {
             is_bar_hover: false,
             click_offset: 0.0,
             child1: WidgetPod::new(child1).boxed(),
+            old_bc_1: BoxConstraints::tight(Size::ZERO),
             child2: WidgetPod::new(child2).boxed(),
+            old_bc_2: BoxConstraints::tight(Size::ZERO),
         }
     }
 
     /// Create a new split panel, with the horizontal axis split in two by a vertical bar.
-    /// The children are laid out left and right.
-    pub fn columns(child1: impl Widget<T> + 'static, child2: impl Widget<T> + 'static) -> Self {
-        Self::new(Axis::Horizontal, child1, child2)
+    pub fn columns(
+        left_child: impl Widget<T> + 'static,
+        right_child: impl Widget<T> + 'static,
+    ) -> Self {
+        Self::new(Axis::Horizontal, left_child, right_child)
     }
 
     /// Create a new split panel, with the vertical axis split in two by a horizontal bar.
-    /// The children are laid out up and down.
-    pub fn rows(child1: impl Widget<T> + 'static, child2: impl Widget<T> + 'static) -> Self {
-        Self::new(Axis::Vertical, child1, child2)
+    pub fn rows(
+        upper_child: impl Widget<T> + 'static,
+        lower_child: impl Widget<T> + 'static,
+    ) -> Self {
+        Self::new(Axis::Vertical, upper_child, lower_child)
     }
 
     /// Builder-style method to set the split point as a fraction of the split axis.
@@ -423,7 +420,7 @@ impl<T: Data> Widget<T> for Split<T> {
         self.split_point_effective = {
             let (min_limit, max_limit) = self.split_side_limits(reduced_size);
             let reduced_axis_size = self.split_axis.major(reduced_size);
-            if reduced_axis_size.is_infinite() || reduced_axis_size <= std::f64::EPSILON {
+            if reduced_axis_size.is_infinite() || reduced_axis_size <= f64::EPSILON {
                 0.5
             } else {
                 self.split_point_chosen
@@ -465,8 +462,19 @@ impl<T: Data> Widget<T> for Split<T> {
                 )
             }
         };
-        let child1_size = self.child1.layout(ctx, &child1_bc, data, env);
-        let child2_size = self.child2.layout(ctx, &child2_bc, data, env);
+
+        let child1_size = if self.old_bc_1 != child1_bc || self.child1.layout_requested() {
+            self.child1.layout(ctx, &child1_bc, data, env)
+        } else {
+            self.child1.layout_rect().size()
+        };
+        self.old_bc_1 = child1_bc;
+        let child2_size = if self.old_bc_2 != child2_bc || self.child2.layout_requested() {
+            self.child2.layout(ctx, &child2_bc, data, env)
+        } else {
+            self.child2.layout_rect().size()
+        };
+        self.old_bc_2 = child2_bc;
 
         // Top-left align for both children, out of laziness.
         // Reduce our unsplit direction to the larger of the two widgets
@@ -481,8 +489,8 @@ impl<T: Data> Widget<T> for Split<T> {
                 Point::new(0.0, child1_size.height + bar_area)
             }
         };
-        self.child1.set_origin(ctx, data, env, child1_pos);
-        self.child2.set_origin(ctx, data, env, child2_pos);
+        self.child1.set_origin(ctx, child1_pos);
+        self.child2.set_origin(ctx, child2_pos);
 
         let paint_rect = self.child1.paint_rect().union(self.child2.paint_rect());
         let insets = paint_rect - my_size.to_rect();

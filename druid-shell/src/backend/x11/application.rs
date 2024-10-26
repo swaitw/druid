@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! X11 implementation of features at the application scope.
 
@@ -30,14 +19,18 @@ use x11rb::protocol::xproto::{
     self, ConnectionExt, CreateWindowAux, EventMask, Timestamp, Visualtype, WindowClass,
 };
 use x11rb::protocol::Event;
-use x11rb::resource_manager::Database as ResourceDb;
+use x11rb::resource_manager::{
+    new_from_default as new_resource_db_from_default, Database as ResourceDb,
+};
 use x11rb::xcb_ffi::XCBConnection;
 
 use crate::application::AppHandler;
 
 use super::clipboard::Clipboard;
+use super::util;
 use super::window::Window;
-use super::{util, xkb};
+use crate::backend::shared::linux;
+use crate::backend::shared::xkb;
 
 // This creates a `struct WindowAtoms` containing the specified atoms as members (along with some
 // convenience methods to intern and query those atoms). We use the following atoms:
@@ -208,7 +201,7 @@ impl Application {
         //
         // https://github.com/linebender/druid/pull/1025#discussion_r442777892
         let (conn, screen_num) = XCBConnection::connect(None)?;
-        let rdb = Rc::new(ResourceDb::new_from_default(&conn)?);
+        let rdb = Rc::new(new_resource_db_from_default(&conn)?);
         let xkb_context = xkb::Context::new();
         xkb_context.set_log_level(tracing::Level::DEBUG);
         use x11rb::protocol::xkb::ConnectionExt;
@@ -308,7 +301,7 @@ impl Application {
             .ok_or_else(|| anyhow!("Invalid screen num: {}", screen_num))?;
         let root_visual_type = util::get_visual_from_screen(screen)
             .ok_or_else(|| anyhow!("Couldn't get visual from screen"))?;
-        let argb_visual_type = util::get_argb_visual_type(&*connection, screen)?;
+        let argb_visual_type = util::get_argb_visual_type(&connection, screen)?;
 
         let timestamp = Rc::new(Cell::new(x11rb::CURRENT_TIME));
         let pending_events = Default::default();
@@ -502,7 +495,7 @@ impl Application {
 
     #[inline]
     pub(crate) fn atoms(&self) -> &AppAtoms {
-        &*self.atoms
+        &self.atoms
     }
 
     /// Returns `Ok(true)` if we want to exit the main loop.
@@ -542,9 +535,11 @@ impl Application {
                     .context("KEY_PRESS - failed to get window")?;
                 let hw_keycode = ev.detail;
                 let mut state = borrow_mut!(self.state)?;
-                let key_event = state
-                    .xkb_state
-                    .key_event(hw_keycode as _, keyboard_types::KeyState::Down);
+                let key_event = state.xkb_state.key_event(
+                    hw_keycode as _,
+                    keyboard_types::KeyState::Down,
+                    false,
+                );
 
                 w.handle_key_event(key_event);
             }
@@ -554,9 +549,10 @@ impl Application {
                     .context("KEY_PRESS - failed to get window")?;
                 let hw_keycode = ev.detail;
                 let mut state = borrow_mut!(self.state)?;
-                let key_event = state
-                    .xkb_state
-                    .key_event(hw_keycode as _, keyboard_types::KeyState::Up);
+                let key_event =
+                    state
+                        .xkb_state
+                        .key_event(hw_keycode as _, keyboard_types::KeyState::Up, false);
 
                 w.handle_key_event(key_event);
             }
@@ -665,11 +661,23 @@ impl Application {
                     .handle_property_notify(*ev)
                     .context("PROPERTY_NOTIFY event handling for primary")?;
             }
+            Event::FocusIn(ev) => {
+                let w = self
+                    .window(ev.event)
+                    .context("FOCUS_IN - failed to get window")?;
+                w.handle_got_focus();
+            }
+            Event::FocusOut(ev) => {
+                let w = self
+                    .window(ev.event)
+                    .context("FOCUS_OUT - failed to get window")?;
+                w.handle_lost_focus();
+            }
             Event::Error(e) => {
                 // TODO: if an error is caused by the present extension, disable it and fall back
-                // to copying pixels. This is blocked on
-                // https://github.com/psychon/x11rb/issues/503
-                return Err(x11rb::errors::ReplyError::from(*e).into());
+                // to copying pixels. This was blocked on
+                // https://github.com/psychon/x11rb/issues/503 but no longer is
+                return Err(x11rb::errors::ReplyError::from(e.clone()).into());
             }
             _ => {}
         }
@@ -807,43 +815,7 @@ impl Application {
     }
 
     pub fn get_locale() -> String {
-        fn locale_env_var(var: &str) -> Option<String> {
-            match std::env::var(var) {
-                Ok(s) if s.is_empty() => {
-                    tracing::debug!("locale: ignoring empty env var {}", var);
-                    None
-                }
-                Ok(s) => {
-                    tracing::debug!("locale: env var {} found: {:?}", var, &s);
-                    Some(s)
-                }
-                Err(std::env::VarError::NotPresent) => {
-                    tracing::debug!("locale: env var {} not found", var);
-                    None
-                }
-                Err(std::env::VarError::NotUnicode(_)) => {
-                    tracing::debug!("locale: ignoring invalid unicode env var {}", var);
-                    None
-                }
-            }
-        }
-
-        // from gettext manual
-        // https://www.gnu.org/software/gettext/manual/html_node/Locale-Environment-Variables.html#Locale-Environment-Variables
-        let mut locale = locale_env_var("LANGUAGE")
-            // the LANGUAGE value is priority list seperated by :
-            // See: https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html#The-LANGUAGE-variable
-            .and_then(|locale| locale.split(':').next().map(String::from))
-            .or_else(|| locale_env_var("LC_ALL"))
-            .or_else(|| locale_env_var("LC_MESSAGES"))
-            .or_else(|| locale_env_var("LANG"))
-            .unwrap_or_else(|| "en-US".to_string());
-
-        // This is done because the locale parsing library we use expects an unicode locale, but these vars have an ISO locale
-        if let Some(idx) = locale.chars().position(|c| c == '.' || c == '@') {
-            locale.truncate(idx);
-        }
-        locale
+        linux::env::locale()
     }
 
     pub(crate) fn idle_pipe(&self) -> RawFd {
@@ -865,10 +837,10 @@ fn drain_idle_pipe(idle_read: RawFd) -> Result<(), Error> {
     let mut read_buf = [0u8; 16];
     loop {
         match nix::unistd::read(idle_read, &mut read_buf[..]) {
-            Err(nix::Error::Sys(nix::errno::Errno::EINTR)) => {}
+            Err(nix::errno::Errno::EINTR) => {}
             // According to write(2), this is the outcome of reading an empty, O_NONBLOCK
             // pipe.
-            Err(nix::Error::Sys(nix::errno::Errno::EAGAIN)) => {
+            Err(nix::errno::Errno::EAGAIN) => {
                 break;
             }
             Err(e) => {
@@ -932,7 +904,7 @@ fn poll_with_timeout(
                 break;
             } else {
                 let millis = c_int::try_from(deadline.duration_since(now).as_millis())
-                    .unwrap_or(c_int::max_value() - 1);
+                    .unwrap_or(c_int::MAX - 1);
                 // The above .as_millis() rounds down. This means we would wake up before the
                 // deadline is reached. Add one to 'simulate' rounding up instead.
                 millis + 1
@@ -963,7 +935,7 @@ fn poll_with_timeout(
                 }
             }
 
-            Err(nix::Error::Sys(nix::errno::Errno::EINTR)) => {
+            Err(nix::errno::Errno::EINTR) => {
                 now = Instant::now();
             }
             Err(e) => return Err(e.into()),

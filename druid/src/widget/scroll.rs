@@ -1,20 +1,10 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A container that scrolls its contents.
 
 use crate::commands::SCROLL_TO_VIEW;
+use crate::contexts::ChangeCtx;
 use crate::debug_state::DebugState;
 use crate::widget::prelude::*;
 use crate::widget::{Axis, ClipBox};
@@ -46,7 +36,7 @@ impl<T, W: Widget<T>> Scroll<T, W> {
     /// [horizontal](#method.horizontal) methods to limit scrolling to a specific axis.
     pub fn new(child: W) -> Scroll<T, W> {
         Scroll {
-            clip: ClipBox::new(child),
+            clip: ClipBox::managed(child),
             scroll_component: ScrollComponent::new(),
         }
     }
@@ -54,23 +44,28 @@ impl<T, W: Widget<T>> Scroll<T, W> {
     /// Scroll by `delta` units.
     ///
     /// Returns `true` if the scroll offset has changed.
-    pub fn scroll_by(&mut self, delta: Vec2) -> bool {
-        self.clip.pan_by(delta)
+    pub fn scroll_by<C: ChangeCtx>(&mut self, ctx: &mut C, delta: Vec2) -> bool {
+        self.clip.pan_by(ctx, delta)
     }
 
-    /// Scroll the minimal distance to show the target rect.
+    /// Scroll the minimal distance to show the target `region`.
     ///
     /// If the target region is larger than the viewport, we will display the
     /// portion that fits, prioritizing the portion closest to the origin.
-    pub fn scroll_to(&mut self, region: Rect) -> bool {
-        self.clip.pan_to_visible(region)
+    pub fn scroll_to<C: ChangeCtx>(&mut self, ctx: &mut C, region: Rect) -> bool {
+        self.clip.pan_to_visible(ctx, region)
     }
 
     /// Scroll to this position on a particular axis.
     ///
     /// Returns `true` if the scroll offset has changed.
-    pub fn scroll_to_on_axis(&mut self, axis: Axis, position: f64) -> bool {
-        self.clip.pan_to_on_axis(axis, position)
+    pub fn scroll_to_on_axis<C: ChangeCtx>(
+        &mut self,
+        ctx: &mut C,
+        axis: Axis,
+        position: f64,
+    ) -> bool {
+        self.clip.pan_to_on_axis(ctx, axis, position)
     }
 }
 
@@ -178,7 +173,7 @@ impl<T: Data, W: Widget<T>> Widget<T> for Scroll<T, W> {
     #[instrument(name = "Scroll", level = "trace", skip(self, ctx, event, data, env))]
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut T, env: &Env) {
         let scroll_component = &mut self.scroll_component;
-        self.clip.with_port(|port| {
+        self.clip.with_port(ctx, |ctx, port| {
             scroll_component.event(port, ctx, event, env);
         });
         if !ctx.is_handled() {
@@ -187,25 +182,24 @@ impl<T: Data, W: Widget<T>> Widget<T> for Scroll<T, W> {
 
         // Handle scroll after the inner widget processed the events, to prefer inner widgets while
         // scrolling.
-        self.clip.with_port(|port| {
+        self.clip.with_port(ctx, |ctx, port| {
             scroll_component.handle_scroll(port, ctx, event, env);
-        });
 
-        if !self.scroll_component.are_bars_held() {
-            // We only scroll to the component if the user is not trying to move the scrollbar.
-            if let Event::Notification(notification) = event {
-                if let Some(&global_highlight_rect) = notification.get(SCROLL_TO_VIEW) {
-                    ctx.set_handled();
-                    let view_port_changed = self
-                        .clip
-                        .default_scroll_to_view_handling(ctx, global_highlight_rect);
-                    if view_port_changed {
-                        self.scroll_component
-                            .reset_scrollbar_fade(|duration| ctx.request_timer(duration), env);
+            if !scroll_component.are_bars_held() {
+                // We only scroll to the component if the user is not trying to move the scrollbar.
+                if let Event::Notification(notification) = event {
+                    if let Some(&global_highlight_rect) = notification.get(SCROLL_TO_VIEW) {
+                        ctx.set_handled();
+                        let view_port_changed =
+                            port.default_scroll_to_view_handling(ctx, global_highlight_rect);
+                        if view_port_changed {
+                            scroll_component
+                                .reset_scrollbar_fade(|duration| ctx.request_timer(duration), env);
+                        }
                     }
                 }
             }
-        }
+        });
     }
 
     #[instrument(name = "Scroll", level = "trace", skip(self, ctx, event, data, env))]
@@ -228,9 +222,6 @@ impl<T: Data, W: Widget<T>> Widget<T> for Scroll<T, W> {
         log_size_warnings(child_size);
 
         let self_size = bc.constrain(child_size);
-        // The new size might have made the current scroll offset invalid. This makes it valid
-        // again.
-        let _ = self.scroll_by(Vec2::ZERO);
         if old_size != self_size {
             self.scroll_component
                 .reset_scrollbar_fade(|d| ctx.request_timer(d), env);

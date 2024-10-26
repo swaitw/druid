@@ -1,3 +1,6 @@
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 use druid::{Lens, LensExt};
 use std::fmt::Debug;
 use std::marker::PhantomData;

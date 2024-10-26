@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 use std::any::Any;
 
@@ -75,15 +64,15 @@ fn main() {
         0x100,
         "E&xit",
         Some(&HotKey::new(SysMods::Cmd, "q")),
+        None,
         true,
-        false,
     );
 
     let mut menubar = Menu::new();
     menubar.add_dropdown(file_menu, "Application", true);
 
     let mut builder = WindowBuilder::new(app.clone());
-    builder.set_handler(Box::new(QuitState::default()));
+    builder.set_handler(Box::<QuitState>::default());
     builder.set_title("Quit example");
     builder.set_menu(menubar);
 

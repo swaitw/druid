@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Implementations of the [`druid::text::Formatter`] trait.
 
@@ -52,7 +41,7 @@ pub enum PostalCodeValidationError {
     IncorrectFormat,
 }
 
-/// A formatter that sets the selection to the first occurance of the word 'cat'
+/// A formatter that sets the selection to the first occurrence of the word 'cat'
 /// in an input string, if it is found.
 pub struct CatSelectingFormatter;
 
@@ -127,7 +116,7 @@ impl Formatter<f64> for NaiveCurrencyFormatter {
         let decimal_pos = input
             .bytes()
             .rposition(|b| b as char == self.decimal_separator);
-        let (major, minor) = input.split_at(decimal_pos.unwrap_or_else(|| input.len()));
+        let (major, minor) = input.split_at(decimal_pos.unwrap_or(input.len()));
         let canonical: String = major
             .chars()
             .filter(|c| *c != self.thousands_separator)

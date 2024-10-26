@@ -1,23 +1,12 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A radio button widget.
 
 use crate::debug_state::DebugState;
 use crate::kurbo::Circle;
 use crate::widget::prelude::*;
-use crate::widget::{CrossAxisAlignment, Flex, Label, LabelText};
+use crate::widget::{Axis, CrossAxisAlignment, Flex, Label, LabelText};
 use crate::{theme, Data, LinearGradient, UnitPoint};
 use tracing::{instrument, trace};
 
@@ -29,10 +18,28 @@ pub struct RadioGroup;
 
 impl RadioGroup {
     /// Given a vector of `(label_text, enum_variant)` tuples, create a group of Radio buttons
-    pub fn new<T: Data + PartialEq>(
+    /// along the vertical axis.
+    pub fn column<T: Data + PartialEq>(
         variants: impl IntoIterator<Item = (impl Into<LabelText<T>> + 'static, T)>,
     ) -> impl Widget<T> {
-        let mut col = Flex::column().cross_axis_alignment(CrossAxisAlignment::Start);
+        RadioGroup::for_axis(Axis::Vertical, variants)
+    }
+
+    /// Given a vector of `(label_text, enum_variant)` tuples, create a group of Radio buttons
+    /// along the horizontal axis.
+    pub fn row<T: Data + PartialEq>(
+        variants: impl IntoIterator<Item = (impl Into<LabelText<T>> + 'static, T)>,
+    ) -> impl Widget<T> {
+        RadioGroup::for_axis(Axis::Horizontal, variants)
+    }
+
+    /// Given a vector of `(label_text, enum_variant)` tuples, create a group of Radio buttons
+    /// along the specified axis.
+    pub fn for_axis<T: Data + PartialEq>(
+        axis: Axis,
+        variants: impl IntoIterator<Item = (impl Into<LabelText<T>> + 'static, T)>,
+    ) -> impl Widget<T> {
+        let mut col = Flex::for_axis(axis).cross_axis_alignment(CrossAxisAlignment::Start);
         let mut is_first = true;
         for (label, variant) in variants.into_iter() {
             if !is_first {

@@ -1,16 +1,5 @@
-// Copyright 2020 The xi-editor Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Storing text.
 
@@ -48,7 +37,7 @@ pub trait TextStorage: PietTextStorage + Data {
     /// require a separate API.
     ///
     /// [`Link`]: super::attribute::Link
-    /// [`piet`]: https://docs.rs/piet
+    /// [`piet`]: crate::piet
     fn links(&self) -> &[Link] {
         &[]
     }
@@ -58,7 +47,9 @@ pub trait TextStorage: PietTextStorage + Data {
 pub struct EnvUpdateCtx<'a, 'b>(&'a UpdateCtx<'a, 'b>);
 
 impl<'a, 'b> EnvUpdateCtx<'a, 'b> {
-    /// Create an EnvChangeCtx for Widget::update
+    /// Create an [`EnvUpdateCtx`] for [`Widget::update`].
+    ///
+    /// [`Widget::update`]: crate::Widget::update
     pub(crate) fn for_update(ctx: &'a UpdateCtx<'a, 'b>) -> Self {
         Self(ctx)
     }
@@ -68,7 +59,7 @@ impl<'a, 'b> EnvUpdateCtx<'a, 'b> {
     ///
     /// See [`UpdateCtx::env_key_changed`] for more details.
     ///
-    /// [`env_update`]: (TextStorage::env_update)
+    /// [`env_update`]: TextStorage::env_update
     pub fn env_key_changed<T>(&self, key: &impl KeyLike<T>) -> bool {
         self.0.env_key_changed(key)
     }
@@ -76,7 +67,7 @@ impl<'a, 'b> EnvUpdateCtx<'a, 'b> {
 
 /// A reference counted string slice.
 ///
-/// This is a data-friendly way to represent strings in druid. Unlike `String`
+/// This is a data-friendly way to represent strings in Druid. Unlike `String`
 /// it cannot be mutated, but unlike `String` it can be cheaply cloned.
 pub type ArcStr = Arc<str>;
 

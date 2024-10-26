@@ -1,16 +1,5 @@
-// Copyright 2021 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2021 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A textbox that that parses and validates data.
 
@@ -32,16 +21,16 @@ const COMPLETE_EDITING: Selector = Selector::new("druid.builtin.textbox-complete
 /// in relation to the provided [`Formatter`]:
 ///
 /// - [`ValueTextBox::validate_while_editing`] takes a flag that determines whether
-/// or not the textbox can display text that is not valid, while editing is
-/// in progress. (Text will still be validated when the user attempts to complete
-/// editing.)
+///   or not the textbox can display text that is not valid, while editing is
+///   in progress. (Text will still be validated when the user attempts to complete
+///   editing.)
 ///
 /// - [`ValueTextBox::update_data_while_editing`] takes a flag that determines
-/// whether the output value is updated during editing, when possible.
+///   whether the output value is updated during editing, when possible.
 ///
 /// - [`ValueTextBox::delegate`] allows you to provide some implementation of
-/// the [`ValidationDelegate`] trait, which receives a callback during editing;
-/// this can be used to report errors further back up the tree.
+///   the [`ValidationDelegate`] trait, which receives a callback during editing;
+///   this can be used to report errors further back up the tree.
 pub struct ValueTextBox<T> {
     child: TextBox<String>,
     formatter: Box<dyn Formatter<T>>,
@@ -70,9 +59,9 @@ pub trait ValidationDelegate {
 pub enum TextBoxEvent {
     /// The textbox began editing.
     Began,
-    /// An edit occured which was considered valid by the [`Formatter`].
+    /// An edit occurred which was considered valid by the [`Formatter`].
     Changed,
-    /// An edit occured which was rejected by the [`Formatter`].
+    /// An edit occurred which was rejected by the [`Formatter`].
     PartiallyInvalid(ValidationError),
     /// The user attempted to finish editing, but the input was not valid.
     Invalid(ValidationError),
@@ -88,9 +77,8 @@ impl TextBox<String> {
     ///
     /// For simple value formatting, you can use the [`ParseFormatter`].
     ///
-    /// [`ValueTextBox`]: ValueTextBox
-    /// [`Formatter`]: crate::text::format::Formatter
-    /// [`ParseFormatter`]: crate::text::format::ParseFormatter
+    /// [`Formatter`]: crate::text::Formatter
+    /// [`ParseFormatter`]: crate::text::ParseFormatter
     pub fn with_formatter<T: Data>(
         self,
         formatter: impl Formatter<T> + 'static,
@@ -102,8 +90,8 @@ impl TextBox<String> {
 impl<T: Data> ValueTextBox<T> {
     /// Create a new `ValueTextBox` from a normal [`TextBox`] and a [`Formatter`].
     ///
-    /// [`TextBox`]: crate::widget::TextBox
-    /// [`Formatter`]: crate::text::format::Formatter
+    /// [`TextBox`]: super::TextBox
+    /// [`Formatter`]: crate::text::Formatter
     pub fn new(mut child: TextBox<String>, formatter: impl Formatter<T> + 'static) -> Self {
         child.text_mut().borrow_mut().send_notification_on_return = true;
         child.text_mut().borrow_mut().send_notification_on_cancel = true;
@@ -260,7 +248,7 @@ impl<T: Data + std::fmt::Debug> Widget<T> for ValueTextBox<T> {
                     self.child.event(ctx, event, &mut self.buffer, env);
                 }
             }
-            // if an edit occured, validate it with the formatter
+            // if an edit occurred, validate it with the formatter
             // notifications can arrive before update, so we always ignore them
             if !matches!(event, Event::Notification(_)) && self.buffer != self.old_buffer {
                 let mut validation = self
@@ -372,7 +360,7 @@ impl<T: Data + std::fmt::Debug> Widget<T> for ValueTextBox<T> {
                 self.old_buffer = self.buffer.clone();
             } else {
                 // textbox is not well equipped to deal with the fact that, in
-                // druid, data can change anywhere in the tree. If we are actively
+                // Druid, data can change anywhere in the tree. If we are actively
                 // editing, and new data arrives, we ignore the new data and keep
                 // editing; the alternative would be to cancel editing, which
                 // could also make sense.

@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Resolution scale related helpers.
 
@@ -28,7 +17,7 @@ use crate::kurbo::{Insets, Line, Point, Rect, Size, Vec2};
 /// These display points will be automatically converted into pixels under the hood.
 /// One pixel is equal to one display point when the platform scale factor is `1.0`.
 ///
-/// Read more about pixels and display points [in the druid book].
+/// Read more about pixels and display points [in the Druid book].
 ///
 /// ## Converting with `Scale`
 ///
@@ -42,7 +31,7 @@ use crate::kurbo::{Insets, Line, Point, Rect, Size, Vec2};
 ///
 /// [`x`]: #method.x
 /// [`y`]: #method.y
-/// [in the druid book]: https://linebender.org/druid/resolution_independence.html
+/// [in the Druid book]: https://linebender.org/druid/07_resolution_independence.html
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Scale {
     /// The scale factor on the x axis.

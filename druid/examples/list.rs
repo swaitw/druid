@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Demos basic list widget and list manipulations.
 
@@ -74,7 +63,7 @@ fn ui_builder() -> impl Widget<AppData> {
     // Build a simple list
     lists.add_flex_child(
         Scroll::new(List::new(|| {
-            Label::new(|item: &u32, _env: &_| format!("List item #{}", item))
+            Label::new(|item: &u32, _env: &_| format!("List item #{item}"))
                 .align_vertical(UnitPoint::LEFT)
                 .padding(10.0)
                 .expand()
@@ -93,7 +82,7 @@ fn ui_builder() -> impl Widget<AppData> {
                 Flex::row()
                     .with_child(
                         Label::new(|(_, item): &(Vector<u32>, u32), _env: &_| {
-                            format!("List item #{}", item)
+                            format!("List item #{item}")
                         })
                         .align_vertical(UnitPoint::LEFT),
                     )
@@ -132,7 +121,7 @@ fn ui_builder() -> impl Widget<AppData> {
         .with_child(
             Scroll::new(
                 List::new(|| {
-                    Label::new(|item: &u32, _env: &_| format!("List item #{}", item))
+                    Label::new(|item: &u32, _env: &_| format!("List item #{item}"))
                         .padding(10.0)
                         .background(Color::rgb(0.5, 0.5, 0.0))
                         .fix_height(50.0)

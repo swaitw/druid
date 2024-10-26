@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Widgets, widget components, and functions for creating widgets
 
@@ -119,7 +108,7 @@ pub fn active_value() -> impl Widget<AppData> {
 /// clears or sets this error based on `Command`s sent to it from some other
 /// widget.
 ///
-/// It's child's data is this `Option<Error>`; the incoming data is ignored
+/// Its child's data is this `Option<Error>`; the incoming data is ignored
 /// completely.
 pub struct ErrorController<W> {
     child: WidgetPod<Option<ValidationError>, W>,
@@ -169,7 +158,7 @@ impl<T, W: Widget<Option<ValidationError>>> Widget<T> for ErrorController<W> {
 
     fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, _: &T, env: &Env) -> Size {
         let size = self.child.layout(ctx, bc, &self.error, env);
-        self.child.set_origin(ctx, &self.error, env, Point::ZERO);
+        self.child.set_origin(ctx, Point::ZERO);
         size
     }
 

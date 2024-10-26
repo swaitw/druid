@@ -1,23 +1,12 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Interacting with the system pasteboard/clipboard.
 pub use crate::backend::clipboard as backend;
 
 /// A handle to the system clipboard.
 ///
-/// To get access to the global clipboard, call [`Application::clipboard()`].
+/// To get access to the global clipboard, call [`Application::clipboard`].
 ///
 ///
 /// # Working with text
@@ -118,13 +107,9 @@ pub use crate::backend::clipboard as backend;
 /// # fn do_something_with_data(_: &str, _: Vec<u8>) {}
 /// ```
 ///
-/// [`Application::clipboard()`]: struct.Application.html#method.clipboard
-/// [`Clipboard::put_string`]: struct.Clipboard.html#method.put_string
-/// [`Clipboard::get_string`]: struct.Clipboard.html#method.get_string
-/// [`FormatId`]: type.FormatId.html
+/// [`Application::clipboard`]: crate::Application::clipboard
 /// [`Universal Type Identifier`]: https://escapetech.eu/manuals/qdrop/uti.html
 /// [MIME types]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
-/// [`ClipboardFormat`]: struct.ClipboardFormat.html
 #[derive(Debug, Clone)]
 pub struct Clipboard(pub(crate) backend::Clipboard);
 
@@ -169,7 +154,7 @@ impl Clipboard {
     }
 }
 
-/// A type identifer for the system clipboard.
+/// A type identifier for the system clipboard.
 ///
 /// These should be [`UTI` strings] on macOS, and (by convention?) [MIME types] elsewhere.
 ///
@@ -179,6 +164,7 @@ pub type FormatId = &'static str;
 
 /// Data coupled with a type identifier.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "wayland", allow(dead_code))]
 #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
 pub struct ClipboardFormat {
     pub(crate) identifier: FormatId,
@@ -225,7 +211,7 @@ cfg_if::cfg_if! {
     } else {
         impl ClipboardFormat {
             cfg_if::cfg_if! {
-                if #[cfg(any(target_os = "linux", target_os = "openbsd"))] {
+                if #[cfg(any(target_os = "freebsd", target_os = "linux", target_os = "openbsd"))] {
                     // trial and error; this is the most supported string type for gtk?
                     pub const TEXT: &'static str = "UTF8_STRING";
                 } else {

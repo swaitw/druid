@@ -1,3 +1,6 @@
+// Copyright 2021 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 //! A data structure for representing widget trees.
 
 use std::collections::HashMap;

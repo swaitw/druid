@@ -1,20 +1,9 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Tests related to propagation of invalid rects.
 
-use float_cmp::approx_eq;
+use float_cmp::assert_approx_eq;
 use test_log::test;
 
 use super::*;
@@ -78,10 +67,10 @@ fn invalidate_scroll() {
             assert_eq!(ctx.region().rects().len(), 1);
             let rect = ctx.region().rects().first().unwrap();
 
-            approx_eq!(f64, rect.x0, 30.);
-            approx_eq!(f64, rect.y0, 40.);
-            approx_eq!(f64, rect.x1, 40.);
-            approx_eq!(f64, rect.y1, 50.);
+            assert_approx_eq!(f64, rect.x0, 30.);
+            assert_approx_eq!(f64, rect.y0, 40.);
+            assert_approx_eq!(f64, rect.x1, 40.);
+            assert_approx_eq!(f64, rect.y1, 50.);
         }
     }
 

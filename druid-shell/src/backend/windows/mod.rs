@@ -1,18 +1,7 @@
-// Copyright 2018 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2018 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
-//! Windows implementation of druid-shell.
+//! Windows implementation of `druid-shell`.
 
 mod accels;
 pub mod application;
@@ -40,7 +29,7 @@ pub mod window;
 //
 // https://docs.microsoft.com/en-us/windows/win32/direct2d/devices-and-device-contexts
 // A Device Context, ID2D1DeviceContext, is available as of windows 7 platform update. This
-// is the the minimum compatibility target for druid. We are not making an effort to do
+// is the minimum compatibility target for Druid. We are not making an effort to do
 // RenderTarget only.
 //
 // Basically, go from HwndRenderTarget or DxgiSurfaceRenderTarget (2d or 3d) to a Device Context.
@@ -94,7 +83,7 @@ impl From<HRESULT> for Error {
 impl Debug for Error {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Error::WinapiError(hr) => write!(f, "hresult {:x}", hr),
+            Error::WinapiError(hr) => write!(f, "hresult {hr:x}"),
         }
     }
 }
@@ -102,7 +91,7 @@ impl Debug for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Error::WinapiError(hr) => write!(f, "hresult {:x}", hr),
+            Error::WinapiError(hr) => write!(f, "hresult {hr:x}"),
         }
     }
 }

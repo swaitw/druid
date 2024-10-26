@@ -1,30 +1,20 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 use crate::{Affine, Data, Size};
 
-// These are based on https://api.flutter.dev/flutter/painting/BoxFit-class.html
+// These are based on https://api.flutter.dev/flutter/painting/BoxFit.html
 /// Strategies for inscribing a rectangle inside another rectangle.
-#[derive(Clone, Data, Copy, PartialEq)]
+#[derive(Default, Clone, Data, Copy, PartialEq, Eq)]
 pub enum FillStrat {
-    /// As large as posible without changing aspect ratio of image and all of image shown
+    /// As large as possible without changing aspect ratio of image and all of image shown
+    #[default]
     Contain,
-    /// As large as posible with no dead space so that some of the image may be clipped
+    /// As large as possible with no dead space so that some of the image may be clipped
     Cover,
     /// Fill the widget with no dead space, aspect ratio of widget is used
     Fill,
-    /// Fill the hight with the images aspect ratio, some of the image may be clipped
+    /// Fill the height with the images aspect ratio, some of the image may be clipped
     FitHeight,
     /// Fill the width with the images aspect ratio, some of the image may be clipped
     FitWidth,
@@ -32,12 +22,6 @@ pub enum FillStrat {
     None,
     /// Scale down to fit but do not scale up
     ScaleDown,
-}
-
-impl Default for FillStrat {
-    fn default() -> Self {
-        FillStrat::Contain
-    }
 }
 
 impl FillStrat {

@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Simple handle for submitting external events.
 
@@ -43,7 +32,7 @@ pub(crate) struct ExtEventHost {
     queue: Arc<Mutex<VecDeque<ExtCommand>>>,
     /// This doesn't exist when the app starts and it can go away if a window closes, so we keep a
     /// reference here and can update it when needed. Note that this reference is shared with all
-    /// `ExtEventSink`s, so that we can update them too.
+    /// [`ExtEventSink`]s, so that we can update them too.
     handle: Arc<Mutex<Option<IdleHandle>>>,
     /// The window that the handle belongs to, so we can keep track of when
     /// we need to get a new handle.
@@ -95,11 +84,6 @@ impl ExtEventSink {
     /// The `payload` must implement `Any + Send`.
     ///
     /// If the [`Target::Auto`] is equivalent to [`Target::Global`].
-    ///
-    /// [`Command`]: struct.Command.html
-    /// [`Selector`]: struct.Selector.html
-    /// [`Target::Auto`]: enum.Target.html#variant.Auto
-    /// [`Target::Global`]: enum.Target.html#variant.Global
     pub fn submit_command<T: Any + Send>(
         &self,
         selector: Selector<T>,

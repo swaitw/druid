@@ -1,3 +1,6 @@
+// Copyright 2021 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // https://github.com/dtolnay/trybuild
 // trybuild is a crate that essentially runs cargo on the provided files, and checks the output.
 // Tests may suddenly fail after a new compiler release, and there's not much we can do about that.

@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Traits for handling value types.
 
@@ -71,13 +60,13 @@ use piet::ImageBuf;
 /// ## Collection types
 ///
 /// `Data` is not implemented for `std` collection types, because comparing them
-/// can be expensive. To use collection types with druid, there are two easy options:
-/// either wrap the collection in an `Arc`, or build druid with the `im` feature,
+/// can be expensive. To use collection types with Druid, there are two easy options:
+/// either wrap the collection in an `Arc`, or build `druid` with the `im` feature,
 /// which adds `Data` implementations to the collections from the [`im` crate],
-/// a set of immutable data structures that fit nicely with druid.
+/// a set of immutable data structures that fit nicely with Druid.
 ///
 /// If the `im` feature is used, the `im` crate is reexported from the root
-/// of the druid crate.
+/// of the `druid` crate.
 ///
 /// ### Example:
 ///
@@ -103,8 +92,7 @@ use piet::ImageBuf;
 /// that is where no variant has fields), the implementation that is generated
 /// checks for equality. Therefore, such types must also implement `PartialEq`.
 ///
-/// [`Data::same`]: trait.Data.html#tymethod.same
-/// [`im` crate]: https://docs.rs/im
+/// [`im` crate]: https://crates.io/crates/im
 pub trait Data: Clone + 'static {
     //// ANCHOR: same_fn
     /// Determine whether two values are the same.
@@ -207,6 +195,7 @@ impl Data for f64 {
     }
 }
 
+/// Checks pointer equality. The internal value is not checked.
 impl<T: ?Sized + 'static> Data for Arc<T> {
     fn same(&self, other: &Self) -> bool {
         Arc::ptr_eq(self, other)
@@ -318,9 +307,9 @@ impl<T: 'static> Data for std::mem::Discriminant<T> {
     }
 }
 
-impl<T: 'static + ?Sized + Data> Data for std::mem::ManuallyDrop<T> {
+impl<T: 'static + Data> Data for std::mem::ManuallyDrop<T> {
     fn same(&self, other: &Self) -> bool {
-        (&**self).same(&**other)
+        (**self).same(&**other)
     }
 }
 

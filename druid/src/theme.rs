@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Theme keys and initial values.
 
@@ -25,6 +14,7 @@ use crate::{Env, FontDescriptor, FontFamily, FontStyle, FontWeight, Insets, Key}
 pub const WINDOW_BACKGROUND_COLOR: Key<Color> =
     Key::new("org.linebender.druid.theme.window_background_color");
 
+#[doc(hidden)]
 #[deprecated(since = "0.8.0", note = "renamed to TEXT_COLOR")]
 pub const LABEL_COLOR: Key<Color> = TEXT_COLOR;
 pub const TEXT_COLOR: Key<Color> = Key::new("org.linebender.druid.theme.label_color");
@@ -56,6 +46,7 @@ pub const BUTTON_BORDER_WIDTH: Key<f64> =
     Key::new("org.linebender.druid.theme.button_border_width");
 pub const BORDER_DARK: Key<Color> = Key::new("org.linebender.druid.theme.border_dark");
 pub const BORDER_LIGHT: Key<Color> = Key::new("org.linebender.druid.theme.border_light");
+#[doc(hidden)]
 #[deprecated(since = "0.8.0", note = "use SELECTED_TEXT_BACKGROUND_COLOR instead")]
 pub const SELECTION_COLOR: Key<Color> = SELECTED_TEXT_BACKGROUND_COLOR;
 pub const SELECTED_TEXT_BACKGROUND_COLOR: Key<Color> =

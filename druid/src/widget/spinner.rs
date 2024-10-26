@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! An animated spinner widget.
 
@@ -26,7 +15,7 @@ use druid::{theme, Color, Data, KeyOrValue, Point, Vec2};
 /// To customize the spinner's size, you can place it inside a [`SizedBox`]
 /// that has a fixed width and height.
 ///
-/// [`SizedBox`]: struct.SizedBox.html
+/// [`SizedBox`]: super::SizedBox
 pub struct Spinner {
     t: f64,
     color: KeyOrValue<Color>,
@@ -40,9 +29,9 @@ impl Spinner {
 
     /// Builder-style method for setting the spinner's color.
     ///
-    /// The argument can be either a `Color` or a [`Key<Color>`].
+    /// The argument can be either a [`Color`] or a [`Key<Color>`].
     ///
-    /// [`Key<Color>`]: ../struct.Key.html
+    /// [`Key<Color>`]: crate::Key
     pub fn with_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
         self.color = color.into();
         self
@@ -50,9 +39,9 @@ impl Spinner {
 
     /// Set the spinner's color.
     ///
-    /// The argument can be either a `Color` or a [`Key<Color>`].
+    /// The argument can be either a [`Color`] or a [`Key<Color>`].
     ///
-    /// [`Key<Color>`]: ../struct.Key.html
+    /// [`Key<Color>`]: crate::Key
     pub fn set_color(&mut self, color: impl Into<KeyOrValue<Color>>) {
         self.color = color.into();
     }
@@ -127,7 +116,7 @@ impl<T: Data> Widget<T> for Spinner {
         let t = self.t;
         let (width, height) = (ctx.size().width, ctx.size().height);
         let center = Point::new(width / 2.0, height / 2.0);
-        let (r, g, b, original_alpha) = Color::as_rgba(&self.color.resolve(env));
+        let (r, g, b, original_alpha) = Color::as_rgba(self.color.resolve(env));
         let scale_factor = width.min(height) / 40.0;
 
         for step in 1..=12 {

@@ -1,23 +1,14 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Convenience methods for widgets.
 
 use super::invalidation::DebugInvalidation;
+#[allow(deprecated)]
+use super::Parse;
 use super::{
     Added, Align, BackgroundBrush, Click, Container, Controller, ControllerHost, EnvScope,
-    IdentityWrapper, LensWrap, Padding, Parse, SizedBox, WidgetId,
+    IdentityWrapper, LensWrap, Padding, SizedBox, WidgetId,
 };
 use crate::widget::{DisabledIf, Scroll};
 use crate::{
@@ -32,64 +23,51 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// a [`Key`] referring to [`Insets`] in the [`Env`].
     ///
     /// [`Key`]: crate::Key
-    /// [`Insets`]: crate::Insets
     fn padding(self, insets: impl Into<KeyOrValue<Insets>>) -> Padding<T, Self> {
         Padding::new(insets, self)
     }
 
     /// Wrap this widget in an [`Align`] widget, configured to center it.
-    ///
-    /// [`Align`]: widget/struct.Align.html
     fn center(self) -> Align<T> {
         Align::centered(self)
     }
 
     /// Wrap this widget in an [`Align`] widget, configured to align left.
-    ///
-    /// [`Align`]: widget/struct.Align.html
     fn align_left(self) -> Align<T> {
         Align::left(self)
     }
 
     /// Wrap this widget in an [`Align`] widget, configured to align right.
-    ///
-    /// [`Align`]: widget/struct.Align.html
     fn align_right(self) -> Align<T> {
         Align::right(self)
     }
 
     /// Wrap this widget in an [`Align`] widget, configured to align vertically.
-    ///
-    /// [`Align`]: widget/struct.Align.html
     fn align_vertical(self, align: UnitPoint) -> Align<T> {
         Align::vertical(align, self)
     }
 
     /// Wrap this widget in an [`Align`] widget, configured to align horizontally.
-    ///
-    /// [`Align`]: widget/struct.Align.html
     fn align_horizontal(self, align: UnitPoint) -> Align<T> {
         Align::horizontal(align, self)
     }
 
     /// Wrap this widget in a [`SizedBox`] with an explicit width.
-    ///
-    /// [`SizedBox`]: widget/struct.SizedBox.html
-    fn fix_width(self, width: f64) -> SizedBox<T> {
+    fn fix_width(self, width: impl Into<KeyOrValue<f64>>) -> SizedBox<T> {
         SizedBox::new(self).width(width)
     }
 
     /// Wrap this widget in a [`SizedBox`] with an explicit height.
-    ///
-    /// [`SizedBox`]: widget/struct.SizedBox.html
-    fn fix_height(self, height: f64) -> SizedBox<T> {
+    fn fix_height(self, height: impl Into<KeyOrValue<f64>>) -> SizedBox<T> {
         SizedBox::new(self).height(height)
     }
 
     /// Wrap this widget in an [`SizedBox`] with an explicit width and height
-    ///
-    /// [`SizedBox`]: widget/struct.SizedBox.html
-    fn fix_size(self, width: f64, height: f64) -> SizedBox<T> {
+    fn fix_size(
+        self,
+        width: impl Into<KeyOrValue<f64>>,
+        height: impl Into<KeyOrValue<f64>>,
+    ) -> SizedBox<T> {
         SizedBox::new(self).width(width).height(height)
     }
 
@@ -99,9 +77,8 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// space. If you only care about expanding in one of width or height, use
     /// [`expand_width`] or [`expand_height`] instead.
     ///
-    /// [`expand_height`]: #method.expand_height
-    /// [`expand_width`]: #method.expand_width
-    /// [`SizedBox`]: widget/struct.SizedBox.html
+    /// [`expand_height`]: WidgetExt::expand_height
+    /// [`expand_width`]: WidgetExt::expand_width
     fn expand(self) -> SizedBox<T> {
         SizedBox::new(self).expand()
     }
@@ -109,8 +86,6 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// Wrap this widget in a [`SizedBox`] with an infinite width.
     ///
     /// This will force the child to use all available space on the x-axis.
-    ///
-    /// [`SizedBox`]: widget/struct.SizedBox.html
     fn expand_width(self) -> SizedBox<T> {
         SizedBox::new(self).expand_width()
     }
@@ -118,20 +93,22 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// Wrap this widget in a [`SizedBox`] with an infinite width.
     ///
     /// This will force the child to use all available space on the y-axis.
-    ///
-    /// [`SizedBox`]: widget/struct.SizedBox.html
     fn expand_height(self) -> SizedBox<T> {
         SizedBox::new(self).expand_height()
     }
 
-    /// Wrap this widget in a [`Container`] with the provided `background`.
+    /// Wrap this widget in a [`Container`] with the provided background `brush`.
     ///
     /// See [`Container::background`] for more information.
-    ///
-    /// [`Container`]: widget/struct.Container.html
-    /// [`Container::background`]: widget/struct.Container.html#method.background
     fn background(self, brush: impl Into<BackgroundBrush<T>>) -> Container<T> {
         Container::new(self).background(brush)
+    }
+
+    /// Wrap this widget in a [`Container`] with the provided foreground `brush`.
+    ///
+    /// See [`Container::foreground`] for more information.
+    fn foreground(self, brush: impl Into<BackgroundBrush<T>>) -> Container<T> {
+        Container::new(self).foreground(brush)
     }
 
     /// Wrap this widget in a [`Container`] with the given border.
@@ -139,8 +116,7 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// Arguments can be either concrete values, or a [`Key`] of the respective
     /// type.
     ///
-    /// [`Container`]: widget/struct.Container.html
-    /// [`Key`]: struct.Key.html
+    /// [`Key`]: crate::Key
     fn border(
         self,
         color: impl Into<KeyOrValue<Color>>,
@@ -151,16 +127,11 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
 
     /// Wrap this widget in a [`EnvScope`] widget, modifying the parent
     /// [`Env`] with the provided closure.
-    ///
-    /// [`EnvScope`]: widget/struct.EnvScope.html
-    /// [`Env`]: struct.Env.html
     fn env_scope(self, f: impl Fn(&mut Env, &T) + 'static) -> EnvScope<T, Self> {
         EnvScope::new(f, self)
     }
 
     /// Wrap this widget with the provided [`Controller`].
-    ///
-    /// [`Controller`]: widget/trait.Controller.html
     fn controller<C: Controller<T, Self>>(self, controller: C) -> ControllerHost<Self, C> {
         ControllerHost::new(self, controller)
     }
@@ -188,8 +159,7 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// mouse down, which can be useful for painting based on `ctx.is_active()`
     /// and `ctx.is_hot()`.
     ///
-    /// [`Click`]: widget/struct.Click.html
-    /// [`LifeCycle::HotChanged`]: enum.LifeCycle.html#variant.HotChanged
+    /// [`LifeCycle::HotChanged`]: crate::LifeCycle::HotChanged
     fn on_click(
         self,
         f: impl Fn(&mut EventCtx, &mut T, &Env) + 'static,
@@ -199,7 +169,7 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
 
     /// Draw the [`layout`] `Rect`s of  this widget and its children.
     ///
-    /// [`layout`]: trait.Widget.html#tymethod.layout
+    /// [`layout`]: Widget::layout
     fn debug_paint_layout(self) -> EnvScope<T, Self> {
         EnvScope::new(|env, _| env.set(Env::DEBUG_PAINT, true), self)
     }
@@ -226,7 +196,7 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// This does nothing by default, but you can use this variable while
     /// debugging to only print messages from particular instances of a widget.
     ///
-    /// [`DEBUG_WIDGET`]: struct.Env.html#associatedconstant.DEBUG_WIDGET
+    /// [`DEBUG_WIDGET`]: crate::Env::DEBUG_WIDGET
     fn debug_widget(self) -> EnvScope<T, Self> {
         EnvScope::new(|env, _| env.set(Env::DEBUG_WIDGET, true), self)
     }
@@ -237,7 +207,9 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     }
 
     /// Parse a `Widget<String>`'s contents
+    #[doc(hidden)]
     #[deprecated(since = "0.7.0", note = "Use TextBox::with_formatter instead")]
+    #[allow(deprecated)]
     fn parse(self) -> Parse<Self>
     where
         Self: Widget<String>,
@@ -252,8 +224,6 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     ///
     /// An id _may_ be reused over time; for instance if you replace one
     /// widget with another, you may reuse the first widget's id.
-    ///
-    /// [`WidgetId`]: struct.WidgetId.html
     fn with_id(self, id: WidgetId) -> IdentityWrapper<Self> {
         IdentityWrapper::wrap(self, id)
     }
@@ -264,8 +234,6 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     }
 
     /// Wrap this widget in a [`Scroll`] widget.
-    ///
-    /// [`Scroll`]: widget/struct.Scroll.html
     fn scroll(self) -> Scroll<T, Self> {
         Scroll::new(self)
     }
@@ -275,9 +243,8 @@ pub trait WidgetExt<T: Data>: Widget<T> + Sized + 'static {
     /// The provided closure will determine if the widget is disabled.
     /// See [`is_disabled`] or [`set_disabled`] for more info about disabled state.
     ///
-    /// [`is_disabled`]: crate::EventCtx::is_disabled
-    /// [`set_disabled`]: crate::EventCtx::set_disabled
-    /// [`DisabledIf`]: crate::widget::DisabledIf
+    /// [`is_disabled`]: EventCtx::is_disabled
+    /// [`set_disabled`]: EventCtx::set_disabled
     fn disabled_if(self, disabled_if: impl Fn(&T, &Env) -> bool + 'static) -> DisabledIf<T, Self> {
         DisabledIf::new(self, disabled_if)
     }
@@ -291,11 +258,11 @@ impl<T: Data, W: Widget<T> + 'static> WidgetExt<T> for W {}
 
 #[doc(hidden)]
 impl<T: Data> SizedBox<T> {
-    pub fn fix_width(self, width: f64) -> SizedBox<T> {
+    pub fn fix_width(self, width: impl Into<KeyOrValue<f64>>) -> SizedBox<T> {
         self.width(width)
     }
 
-    pub fn fix_height(self, height: f64) -> SizedBox<T> {
+    pub fn fix_height(self, height: impl Into<KeyOrValue<f64>>) -> SizedBox<T> {
         self.height(height)
     }
 }
@@ -324,7 +291,7 @@ impl<T: Data, W> EnvScope<T, W> {
 mod tests {
     use super::*;
     use crate::widget::Slider;
-    use crate::Color;
+    use crate::{Color, Key};
     use test_log::test;
 
     #[test]
@@ -332,28 +299,50 @@ mod tests {
         // this should be Container<Align<Container<Slider>>>
         let widget = Slider::new()
             .background(Color::BLACK)
+            .foreground(Color::WHITE)
             .align_left()
             .border(Color::BLACK, 1.0);
         assert!(widget.border_is_some());
         assert!(!widget.background_is_some());
+        assert!(!widget.foreground_is_some());
 
         // this should be Container<Slider>
         let widget = Slider::new()
             .background(Color::BLACK)
-            .border(Color::BLACK, 1.0);
+            .border(Color::BLACK, 1.0)
+            .foreground(Color::WHITE);
         assert!(widget.background_is_some());
         assert!(widget.border_is_some());
+        assert!(widget.foreground_is_some());
     }
 
     #[test]
     fn sized_box_reuse() {
+        let mut env = Env::empty();
+
         // this should be SizedBox<Align<SizedBox<Slider>>>
         let widget = Slider::new().fix_height(10.0).align_left().fix_width(1.0);
-        assert_eq!(widget.width_and_height(), (Some(1.0), None));
+        assert_eq!(widget.width_and_height(&env), (Some(1.0), None));
 
         // this should be SizedBox<Slider>
         let widget = Slider::new().fix_height(10.0).fix_width(1.0);
-        assert_eq!(widget.width_and_height(), (Some(1.0), Some(10.0)));
+        assert_eq!(widget.width_and_height(&env), (Some(1.0), Some(10.0)));
+
+        const HEIGHT_KEY: Key<f64> = Key::new("test-sized-box-reuse-height");
+        const WIDTH_KEY: Key<f64> = Key::new("test-sized-box-reuse-width");
+        env.set(HEIGHT_KEY, 10.0);
+        env.set(WIDTH_KEY, 1.0);
+
+        // this should be SizedBox<Align<SizedBox<Slider>>>
+        let widget = Slider::new()
+            .fix_height(HEIGHT_KEY)
+            .align_left()
+            .fix_width(WIDTH_KEY);
+        assert_eq!(widget.width_and_height(&env), (Some(1.0), None));
+
+        // this should be SizedBox<Slider>
+        let widget = Slider::new().fix_height(HEIGHT_KEY).fix_width(WIDTH_KEY);
+        assert_eq!(widget.width_and_height(&env), (Some(1.0), Some(10.0)));
     }
 
     /// we only care that this will compile; see

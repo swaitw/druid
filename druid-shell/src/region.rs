@@ -1,4 +1,7 @@
-use kurbo::{BezPath, Rect, Shape, Vec2};
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::kurbo::{BezPath, Point, Rect, Shape, Vec2};
 
 /// A union of rectangles, useful for describing an area that needs to be repainted.
 #[derive(Clone, Debug)]
@@ -45,6 +48,7 @@ impl Region {
         }
     }
 
+    #[doc(hidden)]
     #[deprecated(since = "0.7.0", note = "Use bounding_box() instead")]
     // this existed on the previous Region type, and I've bumped into it
     // a couple times while updating
@@ -55,6 +59,11 @@ impl Region {
     /// Returns `true` if this region has a non-empty intersection with the given rectangle.
     pub fn intersects(&self, rect: Rect) -> bool {
         self.rects.iter().any(|r| r.intersect(rect).area() > 0.0)
+    }
+
+    /// Returns `true` if the given `point` is contained within any rectangle in the region.
+    pub fn contains(&self, point: Point) -> bool {
+        self.rects.iter().any(|r| r.contains(point))
     }
 
     /// Returns `true` if this region is empty.

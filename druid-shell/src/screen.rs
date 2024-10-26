@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Module to get information about monitors
 
@@ -21,7 +10,9 @@ use std::fmt::Display;
 
 /// Monitor struct containing data about a monitor on the system
 ///
-/// Use Screen::get_monitors() to return a Vec<Monitor> of all the monitors on the system
+/// Use [`Screen::get_monitors`] to return a `Vec<Monitor>` of all the monitors on the system
+///
+/// [`Screen::get_monitors`]: Screen::get_monitors
 #[derive(Clone, Debug, PartialEq)]
 pub struct Monitor {
     primary: bool,
@@ -79,10 +70,11 @@ impl Display for Monitor {
 
 /// Information about the screen and monitors
 pub struct Screen {}
+
 impl Screen {
     /// Returns a vector of all the [`monitors`] on the system.
     ///
-    /// [`monitors`]: struct.Monitor.html
+    /// [`monitors`]: Monitor
     pub fn get_monitors() -> Vec<Monitor> {
         backend::screen::get_monitors()
     }

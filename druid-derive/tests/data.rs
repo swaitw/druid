@@ -1,3 +1,6 @@
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 //! Test #[derive(Data)]
 
 use druid::Data;

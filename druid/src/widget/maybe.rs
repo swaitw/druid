@@ -1,16 +1,5 @@
-// Copyright 2021 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2021 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A widget for optional data, with different `Some` and `None` children.
 
@@ -96,7 +85,7 @@ impl<T: Data> Widget<Option<T>> for Maybe<T> {
             // or on WidgetAdded
             self.rebuild_widget(data.is_some());
         }
-        assert_eq!(data.is_some(), self.widget.is_some(), "{:?}", event);
+        assert_eq!(data.is_some(), self.widget.is_some(), "{event:?}");
         match data.as_ref() {
             Some(d) => self.widget.with_some(|w| w.lifecycle(ctx, event, d, env)),
             None => self.widget.with_none(|w| w.lifecycle(ctx, event, &(), env)),
@@ -125,12 +114,12 @@ impl<T: Data> Widget<Option<T>> for Maybe<T> {
         match data.as_ref() {
             Some(d) => self.widget.with_some(|w| {
                 let size = w.layout(ctx, bc, d, env);
-                w.set_origin(ctx, d, env, Point::ORIGIN);
+                w.set_origin(ctx, Point::ORIGIN);
                 size
             }),
             None => self.widget.with_none(|w| {
                 let size = w.layout(ctx, bc, &(), env);
-                w.set_origin(ctx, &(), env, Point::ORIGIN);
+                w.set_origin(ctx, Point::ORIGIN);
                 size
             }),
         }

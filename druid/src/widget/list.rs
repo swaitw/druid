@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Simple list view widget.
 
@@ -39,6 +28,7 @@ pub struct List<T> {
     children: Vec<WidgetPod<T, Box<dyn Widget<T>>>>,
     axis: Axis,
     spacing: KeyOrValue<f64>,
+    old_bc: BoxConstraints,
 }
 
 impl<T: Data> List<T> {
@@ -50,6 +40,7 @@ impl<T: Data> List<T> {
             children: Vec::new(),
             axis: Axis::Vertical,
             spacing: KeyOrValue::Concrete(0.),
+            old_bc: BoxConstraints::tight(Size::ZERO),
         }
     }
 
@@ -124,7 +115,7 @@ impl<T: Data> ListIter<T> for Vector<T> {
     }
 }
 
-//An implementation for ListIter<(K, V)> has been ommitted due to problems
+//An implementation for ListIter<(K, V)> has been omitted due to problems
 //with how the List Widget handles the reordering of its data.
 #[cfg(feature = "im")]
 impl<K, V> ListIter<V> for OrdMap<K, V>
@@ -395,6 +386,10 @@ impl<C: Data, T: ListIter<C>> Widget<T> for List<C> {
         let mut minor = axis.minor(bc.min());
         let mut major_pos = 0.0;
         let mut paint_rect = Rect::ZERO;
+
+        let bc_changed = self.old_bc != *bc;
+        self.old_bc = *bc;
+
         let mut children = self.children.iter_mut();
         let child_bc = axis.constraints(bc, 0., f64::INFINITY);
         data.for_each(|child_data, _| {
@@ -404,9 +399,15 @@ impl<C: Data, T: ListIter<C>> Widget<T> for List<C> {
                     return;
                 }
             };
-            let child_size = child.layout(ctx, &child_bc, child_data, env);
+
+            let child_size = if bc_changed || child.layout_requested() {
+                child.layout(ctx, &child_bc, child_data, env)
+            } else {
+                child.layout_rect().size()
+            };
+
             let child_pos: Point = axis.pack(major_pos, 0.).into();
-            child.set_origin(ctx, child_data, env, child_pos);
+            child.set_origin(ctx, child_pos);
             paint_rect = paint_rect.union(child.paint_rect());
             minor = minor.max(axis.minor(child_size));
             major_pos += axis.major(child_size) + spacing;

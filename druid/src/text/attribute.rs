@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Text attributes and spans.
 
@@ -81,29 +70,24 @@ struct Span<T> {
 /// let theme_color = Attribute::text_color(theme::SELECTION_COLOR);
 /// ```
 ///
-/// [`KeyOrValue`]: ../enum.KeyOrValue.html
-/// [`theme`]: ../theme
-/// [`Attribute::size`]: #method.size
-/// [`Attribute::text_color`]: #method.text_color
+/// [`theme`]: crate::theme
 #[derive(Debug, Clone)]
 pub enum Attribute {
     /// The font family.
     FontFamily(FontFamily),
     /// The font size, in points.
     FontSize(KeyOrValue<f64>),
-    /// The [`FontWeight`](struct.FontWeight.html).
+    /// The [`FontWeight`].
     Weight(FontWeight),
     /// The foreground color of the text.
     TextColor(KeyOrValue<Color>),
     /// The [`FontStyle`]; either regular or italic.
-    ///
-    /// [`FontStyle`]: enum.FontStyle.html
     Style(FontStyle),
     /// Underline.
     Underline(bool),
     /// Strikethrough
     Strikethrough(bool),
-    /// A [`FontDescriptor`](struct.FontDescriptor.html).
+    /// A [`FontDescriptor`].
     Descriptor(KeyOrValue<FontDescriptor>),
 }
 
@@ -222,7 +206,7 @@ impl<T: Clone> SpanSet<T> {
             .spans
             .iter()
             .position(|x| x.range.start >= span.range.start)
-            .unwrap_or_else(|| self.spans.len());
+            .unwrap_or(self.spans.len());
 
         // if we are inserting into the middle of an existing span we need
         // to add the trailing portion back afterwards.

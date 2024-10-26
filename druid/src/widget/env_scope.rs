@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A widget that accepts a closure to update the environment for its child.
 
@@ -49,7 +38,7 @@ impl<T, W: Widget<T>> EnvScope<T, W> {
     /// # }
     /// ```
     ///
-    /// [`WidgetExt::env_scope`]: ../trait.WidgetExt.html#method.env_scope
+    /// [`WidgetExt::env_scope`]: super::WidgetExt::env_scope
     pub fn new(f: impl Fn(&mut Env, &T) + 'static, child: W) -> EnvScope<T, W> {
         EnvScope {
             f: Box::new(f),
@@ -94,7 +83,7 @@ impl<T: Data, W: Widget<T>> Widget<T> for EnvScope<T, W> {
         (self.f)(&mut new_env, data);
 
         let size = self.child.layout(ctx, bc, data, &new_env);
-        self.child.set_origin(ctx, data, env, Point::ORIGIN);
+        self.child.set_origin(ctx, Point::ORIGIN);
         size
     }
 

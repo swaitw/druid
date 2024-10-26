@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 use std::io::{ErrorKind, Result};
 use std::path::{Path, PathBuf};
@@ -23,7 +12,8 @@ const EXCEPTIONS: &[&str] = &[
     "svg",               // usvg doesn't currently build as Wasm.
     "async_event",       // the web backend doesn't currently support spawning threads.
     "blocking_function", // the web backend doesn't currently support spawning threads.
-    "sub_window",
+    "sub_window",        // Sub-windows dont apply to web
+    "input_region",      // None of the demonstrated window features apply to web
 ];
 
 /// Create a platform specific link from `src` to the `dst` directory.
@@ -57,7 +47,7 @@ fn link_dir_windows(src: &Path, dst: &Path) {
         Some(err) => panic!("Failed to remove directory: {}", err),
     }
     // Attempt to create a symlink, which will work with either
-    // * Admininstrator privileges
+    // * Administrator privileges
     // * New enough Windows with developer mode enabled
     if std::os::windows::fs::symlink_dir(src, dst).is_ok() {
         return;

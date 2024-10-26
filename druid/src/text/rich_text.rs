@@ -1,16 +1,5 @@
-// Copyright 2018 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2018 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Rich text with style spans.
 
@@ -44,13 +33,13 @@ impl RichText {
         RichText {
             buffer,
             attrs: Arc::new(attributes),
+            // TODO: Figure out if this needs to stay Arc, or if it can be switched to Rc
+            #[allow(clippy::arc_with_non_send_sync)]
             links: Arc::new([]),
         }
     }
 
     /// Builder-style method for adding an [`Attribute`] to a range of text.
-    ///
-    /// [`Attribute`]: enum.Attribute.html
     pub fn with_attribute(mut self, range: impl RangeBounds<usize>, attr: Attribute) -> Self {
         self.add_attribute(range, attr);
         self
@@ -67,8 +56,6 @@ impl RichText {
     }
 
     /// Add an [`Attribute`] to the provided range of text.
-    ///
-    /// [`Attribute`]: enum.Attribute.html
     pub fn add_attribute(&mut self, range: impl RangeBounds<usize>, attr: Attribute) {
         let range = util::resolve_range(range, self.buffer.len());
         Arc::make_mut(&mut self.attrs).add(range, attr);
@@ -122,8 +109,6 @@ impl TextStorage for RichText {
 ///
 /// let rich_text = builder.build();
 /// ```
-///
-/// [`RichText`]: RichText
 #[derive(Default)]
 pub struct RichTextBuilder {
     buffer: String,
@@ -183,7 +168,7 @@ impl RichTextBuilder {
 
 /// Adds Attributes to the text.
 ///
-/// See also: [`RichTextBuilder`](RichTextBuilder)
+/// See also: [`RichTextBuilder`]
 pub struct AttributesAdder<'a> {
     rich_text_builder: &'a mut RichTextBuilder,
     range: Range<usize>,

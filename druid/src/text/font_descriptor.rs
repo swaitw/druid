@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Font attributes
 
@@ -22,20 +11,18 @@ use crate::{Data, FontFamily, FontStyle, FontWeight};
 /// a single type that represents a specific font face at a specific size.
 #[derive(Debug, Data, Clone, PartialEq)]
 pub struct FontDescriptor {
-    /// The font's [`FontFamily`](struct.FontFamily.html).
+    /// The font's [`FontFamily`].
     pub family: FontFamily,
     /// The font's size.
     pub size: f64,
-    /// The font's [`FontWeight`](struct.FontWeight.html).
+    /// The font's [`FontWeight`].
     pub weight: FontWeight,
-    /// The font's [`FontStyle`](struct.FontStyle.html).
+    /// The font's [`FontStyle`].
     pub style: FontStyle,
 }
 
 impl FontDescriptor {
     /// Create a new descriptor with the provided [`FontFamily`].
-    ///
-    /// [`FontFamily`]: struct.FontFamily.html
     pub const fn new(family: FontFamily) -> Self {
         FontDescriptor {
             family,
@@ -52,16 +39,12 @@ impl FontDescriptor {
     }
 
     /// Buider-style method to set the descriptor's [`FontWeight`].
-    ///
-    /// [`FontWeight`]: struct.FontWeight.html
     pub const fn with_weight(mut self, weight: FontWeight) -> Self {
         self.weight = weight;
         self
     }
 
     /// Buider-style method to set the descriptor's [`FontStyle`].
-    ///
-    /// [`FontStyle`]: enum.FontStyle.html
     pub const fn with_style(mut self, style: FontStyle) -> Self {
         self.style = style;
         self

@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! ## Window, application, and context menus
 //!
@@ -79,13 +68,13 @@
 //!         .entry(MenuItem::new(LocalizedString::new("macos-menu-services")))
 //!         .entry(
 //!             MenuItem::new(LocalizedString::new("macos-menu-hide-app"))
-//!                 // druid handles the HIDE_APPLICATION command automatically
+//!                 // Druid handles the HIDE_APPLICATION command automatically
 //!                 .command(commands::HIDE_APPLICATION)
 //!                 .hotkey(SysMods::Cmd, "h"),
 //!         )
 //!         .entry(
 //!             MenuItem::new(LocalizedString::new("macos-menu-hide-others"))
-//!                 // druid handles the HIDE_OTHERS command automatically
+//!                 // Druid handles the HIDE_OTHERS command automatically
 //!                 .command(commands::HIDE_OTHERS)
 //!                 .hotkey(SysMods::AltCmd, "h"),
 //!         )
@@ -98,7 +87,7 @@
 //!         .separator()
 //!         .entry(
 //!             MenuItem::new(LocalizedString::new("macos-menu-quit-app"))
-//!                 // druid handles the QUIT_APP command automatically
+//!                 // Druid handles the QUIT_APP command automatically
 //!                 .command(commands::QUIT_APP)
 //!                 .hotkey(SysMods::Cmd, "q"),
 //!         )
@@ -168,9 +157,14 @@ impl<T: Data> MenuManager<T> {
     #[allow(unreachable_code)]
     pub fn platform_default() -> Option<MenuManager<T>> {
         #[cfg(target_os = "macos")]
-        return Some(MenuManager::new(|_, _, _| sys::mac::application::default()));
+        return Some(MenuManager::new(|_, _, _| sys::mac::menu_bar()));
 
-        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "openbsd"))]
+        #[cfg(any(
+            target_os = "windows",
+            target_os = "freebsd",
+            target_os = "linux",
+            target_os = "openbsd"
+        ))]
         return None;
 
         // we want to explicitly handle all platforms; log if a platform is missing.
@@ -285,10 +279,10 @@ impl MenuBuildCtx {
         id: u32,
         text: &str,
         key: Option<&HotKey>,
+        selected: Option<bool>,
         enabled: bool,
-        selected: bool,
     ) {
-        self.current.add_item(id, text, key, enabled, selected);
+        self.current.add_item(id, text, key, selected, enabled);
     }
 
     fn add_separator(&mut self) {
@@ -339,8 +333,8 @@ impl MenuUpdate {
     }
 }
 
-/// This is the trait that enables recursive visiting of all menu entries. It isn't publically
-/// visible (the publically visible analogue of this is `Into<MenuEntry<T>>`).
+/// This is the trait that enables recursive visiting of all menu entries. It isn't publicly
+/// visible (the publicly visible analogue of this is `Into<MenuEntry<T>>`).
 trait MenuVisitor<T> {
     /// Called when a menu item is activated.
     ///
@@ -517,7 +511,7 @@ impl<T: Data> Menu<T> {
     }
 
     #[doc(hidden)]
-    #[deprecated(since = "0.8.0", note = "use entry instead")]
+    #[deprecated(since = "0.8.0", note = "use separator instead")]
     pub fn append_separator(self) -> Self {
         self.separator()
     }
@@ -700,11 +694,7 @@ impl<T: Data> MenuItem<T> {
         let new_state = MenuItemState {
             title: self.title.display_text(),
             hotkey: self.hotkey.as_mut().and_then(|h| h(data, env)),
-            selected: self
-                .selected
-                .as_mut()
-                .map(|s| s(data, env))
-                .unwrap_or(false),
+            selected: self.selected.as_mut().map(|s| s(data, env)),
             enabled: self.enabled.as_mut().map(|e| e(data, env)).unwrap_or(true),
         };
         let ret = self.old_state.as_ref() != Some(&new_state);
@@ -798,8 +788,8 @@ impl<T: Data> MenuVisitor<T> for MenuItem<T> {
             self.id.0.map(|x| x.get()).unwrap_or(0),
             &state.title,
             state.hotkey.as_ref(),
-            state.enabled,
             state.selected,
+            state.enabled,
         );
     }
 }
@@ -820,13 +810,13 @@ impl<T: Data> MenuVisitor<T> for Separator {
 struct MenuItemState {
     title: ArcStr,
     hotkey: Option<HotKey>,
-    selected: bool,
+    selected: Option<bool>,
     enabled: bool,
 }
 
 /// Uniquely identifies a menu item.
 ///
-/// On the druid-shell side, the id is represented as a u32.
+/// On the `druid-shell` side, the id is represented as a u32.
 /// We reserve '0' as a placeholder value; on the Rust side
 /// we represent this as an `Option<NonZerou32>`, which better
 /// represents the semantics of our program.

@@ -1,3 +1,6 @@
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 //! testing the ignore attribute
 
 use druid::Data;
@@ -21,6 +24,7 @@ fn ignore_item_without_data_impl() {
     use std::path::PathBuf;
 
     #[derive(Clone, Data)]
+    #[allow(dead_code)]
     struct CoolStruct {
         len: usize,
         #[data(ignore)]
@@ -32,7 +36,12 @@ fn ignore_item_without_data_impl() {
 #[test]
 fn tuple_struct() {
     #[derive(Clone, Data)]
-    struct Tup(usize, #[data(ignore)] usize);
+    struct Tup(
+        usize,
+        #[data(ignore)]
+        #[allow(dead_code)]
+        usize,
+    );
 
     let one = Tup(1, 1);
     let two = Tup(1, 5);

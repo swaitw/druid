@@ -1,18 +1,7 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
-//! This example shows a how a single-line text field might be implemented for druid-shell.
+//! This example shows a how a single-line text field might be implemented for `druid-shell`.
 //! Beyond the omission of multiple lines and text wrapping, it also is missing many motions
 //! (like "move to previous word") and bidirectional text support.
 
@@ -122,7 +111,7 @@ impl WinHandler for AppState {
                 self.handle.close();
                 Application::global().quit()
             }
-            _ => println!("unexpected id {}", id),
+            _ => println!("unexpected id {id}"),
         }
     }
 
@@ -259,7 +248,7 @@ impl InputHandler for AppInputHandler {
 
     fn handle_action(&mut self, action: Action) {
         let handled = apply_default_behavior(self, action);
-        println!("action: {:?} handled: {:?}", action, handled);
+        println!("action: {action:?} handled: {handled:?}");
     }
 }
 
@@ -360,7 +349,7 @@ fn apply_movement(
 fn main() {
     let app = Application::new().unwrap();
     let mut builder = WindowBuilder::new(app.clone());
-    builder.set_handler(Box::new(AppState::default()));
+    builder.set_handler(Box::<AppState>::default());
     builder.set_title("Text editing example");
     let window = builder.build().unwrap();
     window.show();

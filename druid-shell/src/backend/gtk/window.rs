@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! GTK window creation and management.
 
@@ -44,7 +33,7 @@ use instant::Duration;
 use tracing::{error, warn};
 
 #[cfg(feature = "raw-win-handle")]
-use raw_window_handle::{unix::XcbHandle, HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle, XcbWindowHandle};
 
 use crate::kurbo::{Insets, Point, Rect, Size, Vec2};
 use crate::piet::{Piet, PietText, RenderContext};
@@ -76,11 +65,11 @@ const SCALE_TARGET_DPI: f64 = 96.0;
 /// Taken from <https://gtk-rs.org/docs-src/tutorial/closures>
 /// It is used to reduce the boilerplate of setting up gtk callbacks
 /// Example:
-/// ```
+/// ```ignore
 /// button.connect_clicked(clone!(handle => move |_| { ... }))
 /// ```
 /// is equivalent to:
-/// ```
+/// ```ignore
 /// {
 ///     let handle = handle.clone();
 ///     button.connect_clicked(move |_| { ... })
@@ -126,7 +115,7 @@ unsafe impl HasRawWindowHandle for WindowHandle {
     fn raw_window_handle(&self) -> RawWindowHandle {
         error!("HasRawWindowHandle trait not implemented for gtk.");
         // GTK is not a platform, and there's no empty generic handle. Pick XCB randomly as fallback.
-        RawWindowHandle::Xcb(XcbHandle::empty())
+        RawWindowHandle::Xcb(XcbWindowHandle::empty())
     }
 }
 
@@ -152,6 +141,7 @@ pub(crate) struct WindowBuilder {
     resizable: bool,
     show_titlebar: bool,
     transparent: bool,
+    always_on_top: bool,
 }
 
 #[derive(Clone)]
@@ -174,6 +164,7 @@ pub(crate) struct WindowState {
     scale: Cell<Scale>,
     area: Cell<ScaledArea>,
     is_transparent: Cell<bool>,
+    handle_titlebar: Cell<bool>,
     /// Used to determine whether to honor close requests from the system: we inhibit them unless
     /// this is true, and this gets set to true when our client requests a close.
     closing: Cell<bool>,
@@ -215,7 +206,7 @@ impl std::fmt::Debug for WindowState {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CustomCursor(gtk::gdk::Cursor);
 
 impl WindowBuilder {
@@ -233,6 +224,7 @@ impl WindowBuilder {
             resizable: true,
             show_titlebar: true,
             transparent: false,
+            always_on_top: false,
         }
     }
 
@@ -254,6 +246,10 @@ impl WindowBuilder {
 
     pub fn show_titlebar(&mut self, show_titlebar: bool) {
         self.show_titlebar = show_titlebar;
+    }
+
+    pub fn set_always_on_top(&mut self, always_on_top: bool) {
+        self.always_on_top = always_on_top;
     }
 
     pub fn set_transparent(&mut self, transparent: bool) {
@@ -292,7 +288,7 @@ impl WindowBuilder {
         window.set_decorated(self.show_titlebar);
         let mut transparent = false;
         if self.transparent {
-            if let Some(screen) = window.screen() {
+            if let Some(screen) = gtk::prelude::GtkWindowExt::screen(&window) {
                 let visual = screen.rgba_visual();
                 transparent = visual.is_some();
                 window.set_visual(visual.as_ref());
@@ -346,14 +342,6 @@ impl WindowBuilder {
                     window.set_transient_for(Some(&parent_state.window));
                 }
             }
-
-            let override_redirect = match level {
-                WindowLevel::AppWindow => false,
-                WindowLevel::Tooltip(_) | WindowLevel::DropDown(_) | WindowLevel::Modal(_) => true,
-            };
-            if let Some(window) = window.window() {
-                window.set_override_redirect(override_redirect);
-            }
         }
 
         let state = WindowState {
@@ -361,6 +349,7 @@ impl WindowBuilder {
             scale: Cell::new(scale),
             area: Cell::new(area),
             is_transparent: Cell::new(transparent),
+            handle_titlebar: Cell::new(false),
             closing: Cell::new(false),
             drawing_area,
             surface: RefCell::new(None),
@@ -434,10 +423,9 @@ impl WindowBuilder {
         if let Some(min_size_dp) = self.min_size {
             let min_area = ScaledArea::from_dp(min_size_dp, scale);
             let min_size_px = min_area.size_px();
-            win_state.drawing_area.set_size_request(
-                min_size_px.width.round() as i32,
-                min_size_px.height.round() as i32,
-            );
+            win_state
+                .drawing_area
+                .set_size_request(min_size_px.width as i32, min_size_px.height as i32);
         }
 
         win_state
@@ -481,13 +469,13 @@ impl WindowBuilder {
                 // Create a new cairo surface if necessary (either because there is no surface, or
                 // because the size or scale changed).
                 let extents = widget.allocation();
-                let size_px = Size::new(extents.width as f64, extents.height as f64);
+                let size_px = Size::new(extents.width() as f64, extents.height() as f64);
                 let no_surface = state.surface.try_borrow().map(|x| x.is_none()).ok() == Some(true);
                 if no_surface || scale_changed || state.area.get().size_px() != size_px {
                     let area = ScaledArea::from_px(size_px, scale);
                     let size_dp = area.size_dp();
                     state.area.set(area);
-                    if let Err(e) = state.resize_surface(extents.width, extents.height) {
+                    if let Err(e) = state.resize_surface(extents.width(), extents.height()) {
                         error!("Failed to resize surface: {}", e);
                     }
                     state.with_handler(|h| h.size(size_dp));
@@ -532,7 +520,7 @@ impl WindowBuilder {
                        // TODO: how are we supposed to handle these errors? What can we do besides panic? Probably nothing right?
                         let alloc = widget.allocation();
                         context.set_source_surface(surface, 0.0, 0.0).unwrap();
-                        context.rectangle(0.0, 0.0, alloc.width as f64, alloc.height as f64);
+                        context.rectangle(0.0, 0.0, alloc.width() as f64, alloc.height() as f64);
                         context.fill().unwrap();
                     });
                 } else {
@@ -588,6 +576,10 @@ impl WindowBuilder {
                                 },
                             );
                         }
+                        if button.is_left() && state.handle_titlebar.replace(false) {
+                            let (root_x, root_y) = event.root();
+                            state.window.begin_move_drag(event.button() as i32, root_x as i32, root_y as i32, event.time());
+                        }
                     }
                 });
             }
@@ -612,6 +604,9 @@ impl WindowBuilder {
                                 wheel_delta: Vec2::ZERO
                             },
                         );
+                        if button.is_left() {
+                            state.handle_titlebar.set(false);
+                        }
                     }
                 });
             }
@@ -642,21 +637,9 @@ impl WindowBuilder {
         );
 
         win_state.drawing_area.connect_leave_notify_event(
-            clone!(handle => move |_widget, crossing| {
+            clone!(handle => move |_widget, _crossing| {
                 if let Some(state) = handle.state.upgrade() {
-                    let scale = state.scale.get();
-                    let crossing_state = crossing.state();
-                    let mouse_event = MouseEvent {
-                        pos: Point::from(crossing.position()).to_dp(scale),
-                        buttons: get_mouse_buttons_from_modifiers(crossing_state),
-                        mods: get_modifiers(crossing_state),
-                        count: 0,
-                        focus: false,
-                        button: MouseButton::None,
-                        wheel_delta: Vec2::ZERO
-                    };
-
-                    state.with_handler(|h| h.mouse_move(&mouse_event));
+                    state.with_handler(|h| h.mouse_leave());
                 }
 
                 Inhibit(true)
@@ -798,6 +781,16 @@ impl WindowBuilder {
             .window()
             .expect("realize didn't create window")
             .set_event_compression(false);
+
+        if let Some(level) = self.level {
+            let override_redirect = match level {
+                WindowLevel::AppWindow => false,
+                WindowLevel::Tooltip(_) | WindowLevel::DropDown(_) | WindowLevel::Modal(_) => true,
+            };
+            if let Some(window) = win_state.window.window() {
+                window.set_override_redirect(override_redirect);
+            }
+        }
 
         let size = self.size;
         win_state.with_handler(|h| {
@@ -1009,39 +1002,50 @@ impl WindowHandle {
         }
     }
 
-    /// The GTK implementation of content_insets differs from, e.g., the Windows one in that it
-    /// doesn't try to account for window decorations. Depending on the platform, GTK might not
-    /// even be aware of the size of the window decorations. And anyway, GTK's `Window::resize`
-    /// function [tries not to include] the window decorations, so it makes sense not to include
-    /// them here either.
-    ///
-    /// [tries not to include]: https://developer.gnome.org/gtk3/stable/GtkWidget.html#geometry-management
     pub fn content_insets(&self) -> Insets {
         if let Some(state) = self.state.upgrade() {
             let scale = state.scale.get();
             let (width_px, height_px) = state.window.size();
             let alloc_px = state.drawing_area.allocation();
-            let window = Size::new(width_px as f64, height_px as f64).to_dp(scale);
-            let alloc = Rect::from_origin_size(
-                (alloc_px.x as f64, alloc_px.y as f64),
-                (alloc_px.width as f64, alloc_px.height as f64),
-            )
-            .to_dp(scale);
-            window.to_rect() - alloc
+            let menu_height_px = height_px - alloc_px.height();
+
+            if let Some(window) = state.window.window() {
+                let frame = window.frame_extents();
+                let (pos_x, pos_y) = window.position();
+                Insets::new(
+                    (pos_x - frame.x()) as f64,
+                    (pos_y - frame.y() + menu_height_px) as f64,
+                    (frame.x() + frame.width() - (pos_x + width_px)) as f64,
+                    (frame.y() + frame.height() - (pos_y + height_px)) as f64,
+                )
+                .to_dp(scale)
+                .nonnegative()
+            } else {
+                let window = Size::new(width_px as f64, height_px as f64).to_dp(scale);
+                let alloc = Rect::from_origin_size(
+                    (alloc_px.x() as f64, alloc_px.y() as f64),
+                    (alloc_px.width() as f64, alloc_px.height() as f64),
+                )
+                .to_dp(scale);
+                window.to_rect() - alloc
+            }
         } else {
             Insets::ZERO
         }
     }
 
+    /// Sets the size of the window in display points
     pub fn set_size(&self, size: Size) {
         if let Some(state) = self.state.upgrade() {
-            let px = size.to_px(state.scale.get());
+            let area = ScaledArea::from_dp(size, state.scale.get());
+            let size_px = area.size_px();
             state
                 .window
-                .resize(px.width.round() as i32, px.height.round() as i32)
+                .resize(size_px.width as i32, size_px.height as i32);
         }
     }
 
+    /// Gets the size of the window in display points
     pub fn get_size(&self) -> Size {
         if let Some(state) = self.state.upgrade() {
             let (x, y) = state.window.size();
@@ -1050,6 +1054,10 @@ impl WindowHandle {
             warn!("Could not get size for GTK window");
             Size::new(0., 0.)
         }
+    }
+
+    pub fn is_foreground_window(&self) -> bool {
+        true
     }
 
     pub fn set_window_state(&mut self, size_state: window::WindowState) {
@@ -1064,8 +1072,6 @@ impl WindowHandle {
                 (Restored, Minimized) => state.window.deiconify(),
                 (Restored, Restored) => (), // Unreachable
             }
-
-            state.window.unmaximize();
         }
     }
 
@@ -1084,8 +1090,50 @@ impl WindowHandle {
         Restored
     }
 
-    pub fn handle_titlebar(&self, _val: bool) {
-        warn!("WindowHandle::handle_titlebar is currently unimplemented for gtk.");
+    pub fn set_input_region(&self, region: Option<Region>) {
+        if let Some(state) = self.state.upgrade() {
+            match region {
+                Some(region) => {
+                    let cairo_region = cairo::Region::create();
+                    for contained_rect in region.rects() {
+                        let cairo_rect = cairo::RectangleInt::new(
+                            contained_rect.x0.floor() as i32,
+                            contained_rect.y0.floor() as i32,
+                            contained_rect.width().ceil() as i32,
+                            contained_rect.height().ceil() as i32,
+                        );
+                        let union_result = cairo_region.union_rectangle(&cairo_rect);
+                        if union_result.is_err() {
+                            warn!(
+                                "Unable to add rectangle to GTK region: {:?}",
+                                union_result.err()
+                            );
+                        }
+                    }
+                    let some_region = Some(&cairo_region);
+                    state.window.input_shape_combine_region(some_region);
+                }
+                None => {
+                    state.window.input_shape_combine_region(None);
+                }
+            }
+        };
+    }
+
+    pub fn set_always_on_top(&self, always_on_top: bool) {
+        if let Some(state) = self.state.upgrade() {
+            state.window.set_keep_above(always_on_top);
+        }
+    }
+
+    pub fn set_mouse_pass_through(&self, _mouse_pass_thorugh: bool) {
+        warn!("set_mouse_pass_through unimplemented");
+    }
+
+    pub fn handle_titlebar(&self, val: bool) {
+        if let Some(state) = self.state.upgrade() {
+            state.handle_titlebar.set(val);
+        }
     }
 
     /// Close the window.
@@ -1093,6 +1141,13 @@ impl WindowHandle {
         if let Some(state) = self.state.upgrade() {
             state.closing.set(true);
             state.window.close();
+        }
+    }
+
+    /// Hide the window
+    pub fn hide(&self) {
+        if let Some(state) = self.state.upgrade() {
+            state.window.hide();
         }
     }
 
@@ -1429,6 +1484,7 @@ const MODIFIER_MAP: &[(ModifierType, Modifiers)] = &[
     // Note: this is the usual value on X11, not sure how consistent it is.
     // Possibly we should use `Keymap::get_num_lock_state()` instead.
     (ModifierType::MOD2_MASK, Modifiers::NUM_LOCK),
+    (ModifierType::MOD4_MASK, Modifiers::META),
 ];
 
 fn get_modifiers(modifiers: ModifierType) -> Modifiers {

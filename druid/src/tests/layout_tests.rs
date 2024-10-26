@@ -1,20 +1,9 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Tests related to layout.
 
-use float_cmp::approx_eq;
+use float_cmp::assert_approx_eq;
 use test_log::test;
 
 use super::*;
@@ -36,7 +25,7 @@ fn simple_layout() {
         harness.send_initial_events();
         harness.just_layout();
         let state = harness.get_state(id_1);
-        approx_eq!(
+        assert_approx_eq!(
             f64,
             state.layout_rect().x0,
             ((DEFAULT_SIZE.width - BOX_WIDTH) / 2.) - PADDING
@@ -111,7 +100,7 @@ fn simple_paint_rect() {
         // paint size is modified by insets
         assert_eq!(state.paint_rect().size(), Size::new(100., 140.,));
 
-        // now does the container widget correctly propogate the child's paint rect?
+        // now does the container widget correctly propagate the child's paint rect?
         let state = harness.get_state(id2);
 
         assert_eq!(state.layout_rect().origin(), Point::ZERO);

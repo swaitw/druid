@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Customizing application-level behaviour.
 
@@ -18,12 +7,10 @@ use std::any::{Any, TypeId};
 
 use crate::{
     commands, core::CommandQueue, ext_event::ExtEventHost, Command, Data, Env, Event, ExtEventSink,
-    Handled, SingleUse, Target, WindowDesc, WindowId,
+    Handled, SingleUse, Target, WindowDesc, WindowHandle, WindowId,
 };
 
 /// A context passed in to [`AppDelegate`] functions.
-///
-/// [`AppDelegate`]: trait.AppDelegate.html
 pub struct DelegateCtx<'a> {
     pub(crate) command_queue: &'a mut CommandQueue,
     pub(crate) ext_event_host: &'a ExtEventHost,
@@ -35,12 +22,11 @@ impl<'a> DelegateCtx<'a> {
     ///
     /// Commands are run in the order they are submitted; all commands
     /// submitted during the handling of an event are executed before
-    /// the [`update()`] method is called.
+    /// the [`update`] method is called.
     ///
     /// [`Target::Auto`] commands will be sent to every window (`Target::Global`).
     ///
-    /// [`Command`]: struct.Command.html
-    /// [`update()`]: trait.Widget.html#tymethod.update
+    /// [`update`]: crate::Widget::update
     pub fn submit_command(&mut self, command: impl Into<Command>) {
         self.command_queue
             .push_back(command.into().default_to(Target::Global))
@@ -48,8 +34,6 @@ impl<'a> DelegateCtx<'a> {
 
     /// Returns an [`ExtEventSink`] that can be moved between threads,
     /// and can be used to submit commands back to the application.
-    ///
-    /// [`ExtEventSink`]: struct.ExtEventSink.html
     pub fn get_external_handle(&self) -> ExtEventSink {
         self.ext_event_host.make_sink()
     }
@@ -57,7 +41,7 @@ impl<'a> DelegateCtx<'a> {
     /// Create a new window.
     /// `T` must be the application's root `Data` type (the type provided to [`AppLauncher::launch`]).
     ///
-    /// [`AppLauncher::launch`]: struct.AppLauncher.html#method.launch
+    /// [`AppLauncher::launch`]: crate::AppLauncher::launch
     pub fn new_window<T: Any>(&mut self, desc: WindowDesc<T>) {
         if self.app_data_type == TypeId::of::<T>() {
             self.submit_command(
@@ -86,9 +70,9 @@ pub trait AppDelegate<T: Data> {
     ///
     /// The return value of this function will be passed down the tree. This can
     /// be the event that was passed in, a different event, or no event. In all cases,
-    /// the [`update()`] method will be called as usual.
+    /// the [`update`] method will be called as usual.
     ///
-    /// [`update()`]: trait.Widget.html#tymethod.update
+    /// [`update`]: crate::Widget::update
     fn event(
         &mut self,
         ctx: &mut DelegateCtx,
@@ -108,12 +92,10 @@ pub trait AppDelegate<T: Data> {
     /// If your implementation returns `Handled::No`, the command will be sent down
     /// the widget tree. Otherwise it will not.
     ///
-    /// To do anything fancier than this, you can submit arbitary commands
+    /// To do anything fancier than this, you can submit arbitrary commands
     /// via [`DelegateCtx::submit_command`].
     ///
-    /// [`Target`]: enum.Target.html
-    /// [`Command`]: struct.Command.html
-    /// [`DelegateCtx::submit_command`]: struct.DelegateCtx.html#method.submit_command
+    /// [`DelegateCtx::submit_command`]: DelegateCtx::submit_command
     fn command(
         &mut self,
         ctx: &mut DelegateCtx,
@@ -128,7 +110,15 @@ pub trait AppDelegate<T: Data> {
     /// The handler for window creation events.
     /// This function is called after a window has been added,
     /// allowing you to customize the window creation behavior of your app.
-    fn window_added(&mut self, id: WindowId, data: &mut T, env: &Env, ctx: &mut DelegateCtx) {}
+    fn window_added(
+        &mut self,
+        id: WindowId,
+        handle: WindowHandle,
+        data: &mut T,
+        env: &Env,
+        ctx: &mut DelegateCtx,
+    ) {
+    }
 
     /// The handler for window deletion events.
     /// This function is called after a window has been removed.

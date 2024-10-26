@@ -1,20 +1,7 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A clickable [`Controller`] widget.
-//!
-//! [`Controller`]: struct.Controller.html
 
 use crate::widget::Controller;
 use crate::{Data, Env, Event, EventCtx, LifeCycle, LifeCycleCtx, MouseButton, Widget};
@@ -22,7 +9,7 @@ use tracing::{instrument, trace};
 
 /// A clickable [`Controller`] widget. Pass this and a child widget to a
 /// [`ControllerHost`] to make the child interactive. More conveniently, this is
-/// available as an `on_click` method via [`WidgetExt`]'.
+/// available as an [`on_click`] method via [`WidgetExt`].
 ///
 /// This is an alternative to the standard [`Button`] widget, for when you want
 /// to make an arbitrary widget clickable.
@@ -31,11 +18,10 @@ use tracing::{instrument, trace};
 /// mouse down, which can be useful for painting based on `ctx.is_active()`
 /// and `ctx.is_hot()`.
 ///
-/// [`Controller`]: struct.Controller.html
-/// [`ControllerHost`]: struct.ControllerHost.html
-/// [`WidgetExt`]: ../trait.WidgetExt.html
-/// [`Button`]: struct.Button.html
-/// [`LifeCycle::HotChanged`]: ../enum.LifeCycle.html#variant.HotChanged
+/// [`ControllerHost`]: super::ControllerHost
+/// [`on_click`]: super::WidgetExt::on_click
+/// [`WidgetExt`]: super::WidgetExt
+/// [`Button`]: super::Button
 pub struct Click<T> {
     /// A closure that will be invoked when the child widget is clicked.
     action: Box<dyn Fn(&mut EventCtx, &mut T, &Env)>,

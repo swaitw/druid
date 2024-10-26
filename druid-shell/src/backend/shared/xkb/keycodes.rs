@@ -1,3 +1,6 @@
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 #![allow(non_upper_case_globals)]
 
 use keyboard_types::Key;
@@ -8,6 +11,7 @@ use super::xkbcommon_sys::*;
 pub fn map_key(keysym: u32) -> Key {
     use Key::*;
     match keysym {
+        XKB_KEY_v => Key::Character("v".to_string()),
         XKB_KEY_BackSpace => Backspace,
         XKB_KEY_Tab | XKB_KEY_KP_Tab | XKB_KEY_ISO_Left_Tab => Tab,
         XKB_KEY_Clear | XKB_KEY_KP_Begin | XKB_KEY_XF86Clear => Clear,

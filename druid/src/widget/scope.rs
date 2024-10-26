@@ -1,3 +1,6 @@
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
 use std::marker::PhantomData;
 
 use crate::widget::prelude::*;
@@ -103,8 +106,8 @@ impl<L: Lens<State, In>, In, State> LensScopeTransfer<L, In, State> {
     pub fn new(lens: L) -> Self {
         LensScopeTransfer {
             lens,
-            phantom_in: PhantomData::default(),
-            phantom_state: PhantomData::default(),
+            phantom_in: PhantomData,
+            phantom_state: PhantomData,
         }
     }
 }
@@ -326,7 +329,7 @@ impl<SP: ScopePolicy, W: Widget<SP::State>> Widget<SP::In> for Scope<SP, W> {
     ) -> Size {
         self.with_state(data, |state, inner| {
             let size = inner.layout(ctx, bc, state, env);
-            inner.set_origin(ctx, state, env, Point::ORIGIN);
+            inner.set_origin(ctx, Point::ORIGIN);
             size
         })
     }

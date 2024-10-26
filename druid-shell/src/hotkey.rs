@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Hotkeys and helpers for parsing keyboard shortcuts.
 
@@ -55,7 +44,7 @@ use crate::{IntoKey, KbKey, KeyEvent, Modifiers};
 /// ```
 ///
 /// [`SysMods`]: enum.SysMods.html
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HotKey {
     pub(crate) mods: RawMods,
     pub(crate) key: KbKey,
@@ -126,13 +115,13 @@ impl HotKey {
 pub enum SysMods {
     None,
     Shift,
-    /// Command on macOS, and Ctrl on windows/linux/OpenBSD
+    /// Command on macOS, and Ctrl on Windows/Linux/OpenBSD/FreeBSD
     Cmd,
-    /// Command + Alt on macOS, Ctrl + Alt on windows/linux/OpenBSD
+    /// Command + Alt on macOS, Ctrl + Alt on Windows/Linux/OpenBSD/FreeBSD
     AltCmd,
-    /// Command + Shift on macOS, Ctrl + Shift on windows/linux/OpenBSD
+    /// Command + Shift on macOS, Ctrl + Shift on Windows/Linux/OpenBSD/FreeBSD
     CmdShift,
-    /// Command + Alt + Shift on macOS, Ctrl + Alt + Shift on windows/linux/OpenBSD
+    /// Command + Alt + Shift on macOS, Ctrl + Alt + Shift on Windows/Linux/OpenBSD/FreeBSD
     AltCmdShift,
 }
 
@@ -140,7 +129,7 @@ pub enum SysMods {
 /// A representation of the active modifier keys.
 ///
 /// This is intended to be clearer than `Modifiers`, when describing hotkeys.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RawMods {
     None,
     Alt,

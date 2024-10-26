@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Common types for representing mouse events and state
 
@@ -27,7 +16,7 @@ use crate::Modifiers;
 pub struct MouseEvent {
     /// The location of the mouse in [display points] in relation to the current window.
     ///
-    /// [display points]: struct.Scale.html
+    /// [display points]: crate::Scale
     pub pos: Point,
     /// Mouse buttons being held down during a move or after a click event.
     /// Thus it will contain the `button` that triggered a mouse-down event,
@@ -118,8 +107,6 @@ impl MouseButton {
 }
 
 /// A set of [`MouseButton`]s.
-///
-/// [`MouseButton`]: enum.MouseButton.html
 #[derive(PartialEq, Eq, Clone, Copy, Default)]
 pub struct MouseButtons(u8);
 
@@ -248,7 +235,7 @@ impl std::fmt::Debug for MouseButtons {
 //NOTE: this currently only contains cursors that are included by default on
 //both Windows and macOS. We may want to provide polyfills for various additional cursors.
 /// Mouse cursors.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Cursor {
     /// The default arrow cursor.
     Arrow,
@@ -257,7 +244,11 @@ pub enum Cursor {
     Pointer,
     Crosshair,
 
-    #[deprecated(note = "this will be removed in future because it is not available on windows")]
+    #[doc(hidden)]
+    #[deprecated(
+        since = "0.8.0",
+        note = "This will be removed because it is not available on Windows."
+    )]
     OpenHand,
     NotAllowed,
     ResizeLeftRight,

@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! A component for embedding in another widget to provide consistent and
 //! extendable scrolling behavior
@@ -22,7 +11,7 @@ use crate::theme;
 use crate::widget::{Axis, Viewport};
 use crate::{Env, Event, EventCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext, TimerToken};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 /// Which scroll bars of a scroll area are currently enabled.
 pub enum ScrollbarsEnabled {
     /// No scrollbars are enabled
@@ -32,6 +21,7 @@ pub enum ScrollbarsEnabled {
     /// Scrolling on the y axis is allowed
     Vertical,
     /// Bidirectional scrolling is allowed
+    #[default]
     Both,
 }
 
@@ -83,12 +73,6 @@ impl ScrollbarsEnabled {
                 ScrollbarsEnabled::Horizontal
             }
         }
-    }
-}
-
-impl Default for ScrollbarsEnabled {
-    fn default() -> Self {
-        ScrollbarsEnabled::Both
     }
 }
 
@@ -244,6 +228,7 @@ impl ScrollComponent {
         let usable_space = viewport_major - major_padding;
 
         let length = (percent_visible * viewport_major).ceil();
+        #[allow(clippy::manual_clamp)] // Usable space could be below the minimum bar size.
         let length = length.max(bar_min_size).min(usable_space);
 
         let left_x_offset = bar_pad + ((usable_space - length) * percent_scrolled).ceil();
@@ -508,16 +493,25 @@ impl ScrollComponent {
     ///
     /// Make sure to call on every lifecycle event
     pub fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, env: &Env) {
-        if let LifeCycle::Size(_) = event {
-            // Show the scrollbars any time our size changes
-            self.reset_scrollbar_fade(|d| ctx.request_timer(d), env);
+        match event {
+            LifeCycle::Size(_) => {
+                // Show the scrollbars any time our size changes
+                self.reset_scrollbar_fade(|d| ctx.request_timer(d), env);
+            }
+            LifeCycle::HotChanged(false) => {
+                if self.hovered.is_hovered() {
+                    self.hovered = BarHoveredState::None;
+                    self.reset_scrollbar_fade(|d| ctx.request_timer(d), env);
+                }
+            }
+            _ => (),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use float_cmp::approx_eq;
+    use float_cmp::assert_approx_eq;
 
     use super::*;
     use crate::kurbo::Size;
@@ -572,7 +566,7 @@ mod tests {
             "scrollbar should be contained by viewport"
         );
         // scrollbar should be at start of viewport
-        approx_eq!(
+        assert_approx_eq!(
             f64,
             scrollbar_rect.y0,
             viewport.view_rect().y0 + TEST_SCROLLBAR_PAD
@@ -602,7 +596,7 @@ mod tests {
             "scrollbar should be contained by viewport"
         );
         // scrollbar should be at end of viewport
-        approx_eq!(
+        assert_approx_eq!(
             f64,
             scrollbar_rect.y1,
             viewport.view_rect().y1 - TEST_SCROLLBAR_PAD
@@ -687,7 +681,7 @@ mod tests {
             "scrollbar should be contained by viewport"
         );
         // scrollbar should use SCROLLBAR_MIN_SIZE when content is much bigger than viewport
-        approx_eq!(f64, scrollbar_rect.height(), TEST_SCROLLBAR_MIN_SIZE);
+        assert_approx_eq!(f64, scrollbar_rect.height(), TEST_SCROLLBAR_MIN_SIZE);
         assert_eq!(scrollbar_rect, Rect::new(86.0, 29.0, 97.0, 46.0));
     }
 
@@ -713,12 +707,12 @@ mod tests {
             "scrollbar should be contained by viewport"
         );
         // scrollbar should fill viewport if too small for SCROLLBAR_MIN_SIZE
-        approx_eq!(
+        assert_approx_eq!(
             f64,
             scrollbar_rect.y0,
             viewport.view_rect().y0 + TEST_SCROLLBAR_PAD
         );
-        approx_eq!(
+        assert_approx_eq!(
             f64,
             scrollbar_rect.y1,
             viewport.view_rect().y1 - TEST_SCROLLBAR_PAD

@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! This example shows how to construct a basic layout,
 //! using columns, rows, and loops, for repeated Widgets.
@@ -40,7 +29,7 @@ fn build_app() -> impl Widget<u32> {
             )
             // Spacing element that will fill all available space in
             // between label and a button. Notice that weight is non-zero.
-            // We could have achieved a similair result with expanding the
+            // We could have achieved a similar result with expanding the
             // width and setting the main-axis-allignment to SpaceBetween.
             .with_flex_spacer(1.0)
             .with_child(Button::new("Two").padding(20.))
@@ -58,10 +47,7 @@ fn build_app() -> impl Widget<u32> {
         // occupy more space.
         let weight = if i == 2 { 3.0 } else { 1.0 };
         // call `expand_height` to force the buttons to use all their provided flex
-        col.add_flex_child(
-            Button::new(format!("Button #{}", i)).expand_height(),
-            weight,
-        );
+        col.add_flex_child(Button::new(format!("Button #{i}")).expand_height(), weight);
     }
 
     // aspect ratio box
@@ -74,7 +60,7 @@ fn build_app() -> impl Widget<u32> {
         .background(Color::WHITE);
     col.add_flex_child(aspect_ratio_box.center(), 1.0);
 
-    // This method asks druid to draw colored rectangles around our widgets,
+    // This method asks Druid to draw colored rectangles around our widgets,
     // so we can visually inspect their layout rectangles.
     col.debug_paint_layout()
 }

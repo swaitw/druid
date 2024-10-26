@@ -1,19 +1,8 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Demonstrates how to debug invalidation regions, and also shows the
-//! invalidation behavior of several build-in widgets.
+//! invalidation behavior of several built-in widgets.
 
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
@@ -50,7 +39,7 @@ fn build_widget() -> impl Widget<AppState> {
     let mut col = Flex::column();
     col.add_child(TextBox::new().lens(AppState::label).padding(3.0));
     for i in 0..30 {
-        col.add_child(Button::new(format!("Button {}", i)).padding(3.0));
+        col.add_child(Button::new(format!("Button {i}")).padding(3.0));
     }
     Split::columns(Scroll::new(col), CircleView.lens(AppState::circles)).debug_invalidation()
 }

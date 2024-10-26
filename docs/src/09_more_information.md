@@ -1,4 +1,5 @@
 # More information
+
 If you want more information about Druid this document contains links more tutorials, blogposts and
 youtube videos.
 
@@ -13,10 +14,11 @@ These three projects provide the basis that Druid works on
 - [jack-mixer](https://github.com/derekdreery/jack-mixer) A jack client that provides mixing, levels and a 3-band eq.
 - [kiro-synth](https://github.com/chris-zen/kiro-synth) An in progress modular sound synthesizer.
 - [psst](https://github.com/jpochyla/psst) A non-Electron GUI Spotify client.
-- *pull requests welcome*
+- [flac_music](https://github.com/wandercn/flac_music) A music player.
+- *And many more*
 
 ## Projects that work with Druid (widgets etc)
-- *pull requests welcome*
+- *No data filled in here*
 
 ## Presentations
 Some presentations about Druid, its background and related topics have been recorded

@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Opening and closing windows and using window and context menus.
 
@@ -24,7 +13,7 @@ use druid::widget::{
 use druid::Target::Global;
 use druid::{
     commands as sys_cmds, AppDelegate, AppLauncher, Application, Color, Command, Data, DelegateCtx,
-    Handled, LocalizedString, Menu, MenuItem, Target, WindowDesc, WindowId,
+    Handled, LocalizedString, Menu, MenuItem, Target, WindowDesc, WindowHandle, WindowId,
 };
 use tracing::info;
 
@@ -170,6 +159,7 @@ impl AppDelegate<State> for Delegate {
     fn window_added(
         &mut self,
         id: WindowId,
+        _handle: WindowHandle,
         _data: &mut State,
         _env: &Env,
         _ctx: &mut DelegateCtx,
@@ -199,7 +189,12 @@ fn make_menu(_: Option<WindowId>, state: &State, _: &Env) -> Menu<State> {
     {
         base = druid::platform_menus::mac::menu_bar();
     }
-    #[cfg(any(target_os = "windows", target_os = "linux", target_os = "openbsd"))]
+    #[cfg(any(
+        target_os = "windows",
+        target_os = "freebsd",
+        target_os = "linux",
+        target_os = "openbsd"
+    ))]
     {
         base = base.entry(druid::platform_menus::win::file::default());
     }

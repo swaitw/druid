@@ -1,16 +1,7 @@
-// Copyright 2020 The xi-editor Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//! An example showcasing various widgets.
 
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
@@ -145,7 +136,7 @@ fn ui_builder() -> impl Widget<AppData> {
                 "Painter",
             ))
             .with_child(label_widget(
-                RadioGroup::new(vec![
+                RadioGroup::column(vec![
                     ("radio gaga", MyRadio::GaGa),
                     ("radio gugu", MyRadio::GuGu),
                     ("radio baabaa", MyRadio::BaaBaa),
@@ -344,7 +335,7 @@ impl<T: Data> Widget<T> for SquaresGrid<T> {
 
             // Constrain the height
             let height = ideal_height.max(bc.min().height).min(bc.max().height);
-            // Now calcuate how many rows we can actually fit in
+            // Now calculate how many rows we can actually fit in
             while height_from_rows(rows) > height && rows > 0 {
                 rows -= 1;
             }
@@ -369,7 +360,7 @@ impl<T: Data> Widget<T> for SquaresGrid<T> {
                 data,
                 env,
             );
-            widget.set_origin(ctx, data, env, Point::new(x_position, y_position));
+            widget.set_origin(ctx, Point::new(x_position, y_position));
             // Increment position for the next cell
             x_position += self.cell_size.width + self.spacing;
             // If we can't fit in another cell in this row ...

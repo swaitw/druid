@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Usage of file open and saving.
 
@@ -84,7 +73,7 @@ impl AppDelegate<String> for Delegate {
     ) -> Handled {
         if let Some(file_info) = cmd.get(commands::SAVE_FILE_AS) {
             if let Err(e) = std::fs::write(file_info.path(), &data[..]) {
-                println!("Error writing file: {}", e);
+                println!("Error writing file: {e}");
             }
             return Handled::Yes;
         }
@@ -95,7 +84,7 @@ impl AppDelegate<String> for Delegate {
                     *data = first_line.to_owned();
                 }
                 Err(e) => {
-                    println!("Error opening file: {}", e);
+                    println!("Error opening file: {e}");
                 }
             }
             return Handled::Yes;

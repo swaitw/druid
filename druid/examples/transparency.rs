@@ -1,16 +1,5 @@
-// Copyright 2019 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2019 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! An example of a transparent window background.
 //! Useful for dropdowns, tooltips and other overlay windows.
@@ -18,14 +7,31 @@
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
 
-use druid::kurbo::Circle;
 use druid::widget::prelude::*;
 use druid::widget::{Flex, Label, Painter, TextBox, WidgetExt};
+use druid::{kurbo::Circle, widget::Controller};
 use druid::{AppLauncher, Color, Lens, Rect, WindowDesc};
 
 #[derive(Clone, Data, Lens)]
 struct HelloState {
     name: String,
+}
+
+struct DragController;
+
+impl<T, W: Widget<T>> Controller<T, W> for DragController {
+    fn event(
+        &mut self,
+        _child: &mut W,
+        ctx: &mut EventCtx,
+        event: &Event,
+        _data: &mut T,
+        _env: &Env,
+    ) {
+        if let Event::MouseMove(_) = event {
+            ctx.window().handle_titlebar(true);
+        }
+    }
 }
 
 pub fn main() {
@@ -81,7 +87,7 @@ fn build_root_widget() -> impl Widget<HelloState> {
     .with_text_size(32.0);
 
     Flex::column()
-        .with_flex_child(circle_and_rects.expand(), 10.0)
+        .with_flex_child(circle_and_rects.expand().controller(DragController), 10.0)
         .with_spacer(4.0)
         .with_child(textbox)
         .with_spacer(4.0)

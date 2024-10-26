@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // massive thanks to github.com/yvt and their project tcw3 (https://github.com/yvt/Stella2), which is some
 // of the most solid/well documented input method code for mac written in Rust that we've found. tcw3 was
@@ -262,14 +251,7 @@ pub extern "C" fn first_rect_for_character_range(
 }
 
 pub extern "C" fn do_command_by_selector(this: &mut Object, _: Sel, cmd: Sel) {
-    if with_edit_lock_from_window(this, true, |lock| do_command_by_selector_impl(lock, cmd))
-        .is_none()
-    {
-        // this is not a text field, so forward command to parent
-        if let Some(superclass) = this.class().superclass() {
-            unsafe { msg_send![superclass, doCommandBySelector: cmd] }
-        }
-    }
+    with_edit_lock_from_window(this, true, |lock| do_command_by_selector_impl(lock, cmd));
 }
 
 fn do_command_by_selector_impl(mut edit_lock: Box<dyn InputHandler>, cmd: Sel) {
@@ -535,7 +517,7 @@ fn do_command_by_selector_impl(mut edit_lock: Box<dyn InputHandler>, cmd: Sel) {
                     || next_char == Some('\r')
                     || next_char == Some('\u{2029}')
                     || next_char == Some('\u{2028}')
-                    || next_char == None
+                    || next_char.is_none()
                 {
                     // next char is a newline or end of doc; so end of transpose range will actually be the starting selection.anchor
                     edit_lock.set_selection(old_selection);
@@ -556,7 +538,7 @@ fn do_command_by_selector_impl(mut edit_lock: Box<dyn InputHandler>, cmd: Sel) {
             let selection = edit_lock.selection();
             let first_grapheme = edit_lock.slice(selection.min()..middle_idx).into_owned();
             let second_grapheme = edit_lock.slice(middle_idx..selection.max());
-            let new_string = format!("{}{}", second_grapheme, first_grapheme);
+            let new_string = format!("{second_grapheme}{first_grapheme}");
             // replace_range should automatically set selection to end of inserted range
             edit_lock.replace_range(selection.range(), &new_string);
         }
@@ -601,7 +583,7 @@ fn do_command_by_selector_impl(mut edit_lock: Box<dyn InputHandler>, cmd: Sel) {
         }
         "noop:" => {}
         e => {
-            eprintln!("unknown text editing command from macOS: {}", e);
+            eprintln!("unknown text editing command from macOS: {e}");
         }
     };
 }
@@ -615,7 +597,7 @@ fn decode_nsrange(
     range: &NSRange,
     start_offset: usize,
 ) -> Option<Range<usize>> {
-    if range.location as usize >= i32::max_value() as usize {
+    if range.location as usize >= i32::MAX as usize {
         return None;
     }
     let start_offset_utf16 = edit_lock.utf8_to_utf16(0..start_offset);

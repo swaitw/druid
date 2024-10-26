@@ -1,16 +1,5 @@
-// Copyright 2020 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2020 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! This example demonstrates the `ViewSwitcher` widget
 
@@ -41,13 +30,13 @@ pub fn main() {
 fn make_ui() -> impl Widget<AppState> {
     let mut switcher_column = Flex::column();
     switcher_column.add_child(
-        Label::new(|data: &u32, _env: &Env| format!("Current view: {}", data))
+        Label::new(|data: &u32, _env: &Env| format!("Current view: {data}"))
             .lens(AppState::current_view),
     );
     for i in 0..6 {
         switcher_column.add_spacer(80.);
         switcher_column.add_child(
-            Button::new(format!("View {}", i))
+            Button::new(format!("View {i}"))
                 .on_click(move |_event, data: &mut u32, _env| {
                     *data = i;
                 })
@@ -80,7 +69,7 @@ fn make_ui() -> impl Widget<AppState> {
                     )
                     .with_flex_child(TextBox::new().lens(AppState::current_text), 1.0)
                     .with_flex_child(
-                        Label::new(|data: &String, _env: &Env| format!("Value entered: {}", data))
+                        Label::new(|data: &String, _env: &Env| format!("Value entered: {data}"))
                             .lens(AppState::current_text),
                         1.0,
                     ),

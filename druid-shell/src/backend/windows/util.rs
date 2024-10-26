@@ -1,16 +1,5 @@
-// Copyright 2017 The Druid Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2017 the Druid Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //! Various utilities for working with windows. Includes utilities for converting between Windows
 //! and Rust types, including strings.
@@ -23,7 +12,7 @@ use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::ptr;
 use std::slice;
 
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use winapi::ctypes::c_void;
 use winapi::shared::dxgi::IDXGIDevice;
 use winapi::shared::guiddef::REFIID;
@@ -61,6 +50,7 @@ impl From<HRESULT> for Error {
 }
 
 pub trait ToWide {
+    #[allow(dead_code)]
     fn to_wide_sized(&self) -> Vec<u16>;
     fn to_wide(&self) -> Vec<u16>;
 }
@@ -84,7 +74,7 @@ pub trait FromWide {
         OsStringExt::from_wide(self.to_u16_slice())
     }
 
-    fn from_wide(&self) -> Option<String> {
+    fn to_string(&self) -> Option<String> {
         String::from_utf16(self.to_u16_slice()).ok()
     }
 }
@@ -158,6 +148,7 @@ type DCompositionCreateDevice = unsafe extern "system" fn(
 
 #[allow(non_snake_case)] // For member fields
 pub struct OptionalFunctions {
+    #[allow(dead_code)]
     pub GetDpiForSystem: Option<GetDpiForSystem>,
     pub GetDpiForWindow: Option<GetDpiForWindow>,
     pub SetProcessDpiAwarenessContext: Option<SetProcessDpiAwarenessContext>,
@@ -189,6 +180,7 @@ fn load_optional_functions() -> OptionalFunctions {
                     $min_windows_version
                 );
             } else {
+                #[allow(clippy::missing_transmute_annotations)]
                 let function = unsafe { mem::transmute::<_, $function>(function_ptr) };
                 $function = Some(function);
             }
@@ -253,9 +245,7 @@ fn load_optional_functions() -> OptionalFunctions {
     }
 }
 
-lazy_static! {
-    pub static ref OPTIONAL_FUNCTIONS: OptionalFunctions = load_optional_functions();
-}
+pub static OPTIONAL_FUNCTIONS: Lazy<OptionalFunctions> = Lazy::new(load_optional_functions);
 
 pub(crate) const CLASS_NAME: &str = "druid";
 
